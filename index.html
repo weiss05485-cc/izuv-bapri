@@ -1406,9 +1406,7 @@ function printReceipt(id) {
     ['תאריך', new Date().toLocaleDateString('he-IL')],
   ].map(([k,v]) => '<div class="row' + (k==='סה"כ'?' total':'') + '"><span>' + k + ':</span><span>' + v + '</span></div>').join('');
   win.document.write('<html dir="rtl"><head><meta charset="UTF-8"><title>קבלה ' + o.orderNum + '</title>'
-    + '<style>body{font-family:Arial;padding:40px;max-width:400px;margin:0 auto;} h2{color:#3E5C1A;} .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;} .total{font-size:20px;font-weight:800;margin-top:16px;color:#3E5C1A;}</style>'
-    + '
-</head><body>'
+    + '<style>body{font-family:Arial;padding:40px;max-width:400px;margin:0 auto;} h2{color:#3E5C1A;} .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;} .total{font-size:20px;font-weight:800;margin-top:16px;color:#3E5C1A;}</style></head><body>'
     + '<h2>🍎 עיצוב בפרי</h2><p style="color:#999;font-size:12px;">קבלה מס\' ' + o.orderNum + '</p><hr>'
     + rows
     + '<p style="text-align:center;margin-top:30px;color:#B89A28;font-weight:700;">תודה על הקנייה! 🍎</p>'
