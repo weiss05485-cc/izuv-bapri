@@ -11,7 +11,7 @@
   --green-dark:  #3E5C1A;
   --gold:        #B89A28;
   --gold-light:  #D4B84A;
-  --bg:          #F7F9F2;h
+  --bg:          #F7F9F2;
   --bg-card:     #FFFFFF;
   --text:        #2A2A2A;
   --text-muted:  #6B7A5A;
@@ -198,6 +198,48 @@ tr:last-child td { border-bottom: none; }
   body { background: white; }
 }
 
+/* ===== MOBILE ===== */
+.hamburger {
+  display: none; background: none; border: none; cursor: pointer;
+  flex-direction: column; gap: 5px; padding: 4px;
+}
+.hamburger span {
+  display: block; width: 24px; height: 2px;
+  background: var(--green-dark); border-radius: 2px; transition: all 0.3s;
+}
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 90;
+}
+.sidebar-overlay.active { display: block; }
+
+@media (max-width: 768px) {
+  #sidebar {
+    position: fixed; right: -220px; top: 0; height: 100vh;
+    transition: right 0.3s ease; z-index: 100;
+  }
+  #sidebar.open { right: 0; }
+  #main { margin-right: 0; }
+  #topbar { padding: 12px 16px; }
+  #topbar h1 { font-size: 16px; }
+  #content { padding: 14px; }
+  .hamburger { display: flex; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card .value { font-size: 22px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid.wide { grid-template-columns: 1fr; }
+  table { font-size: 12px; }
+  th, td { padding: 8px 10px; }
+  .btn { padding: 8px 14px; font-size: 13px; }
+  .card { padding: 14px; }
+  div[style*="grid-template-columns:1fr 1fr"],
+  div[style*="grid-template-columns:2fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  .modal { padding: 18px; margin: 10px; }
+  #sidebar .logo span { font-size: 15px; }
+}
+
 /* ===== WORK SCREEN FULLSCREEN ===== */
 .work-fullscreen #sidebar,
 .work-fullscreen #topbar { display: none; }
@@ -230,32 +272,318 @@ tr:last-child td { border-bottom: none; }
   opacity: 0; transition: opacity 0.3s; pointer-events: none;
 }
 #toast.show { opacity: 1; }
-
-/* ===== MOBILE ===== */
-.hamburger { display:none; background:none; border:none; cursor:pointer; flex-direction:column; gap:5px; padding:4px; }
-.hamburger span { display:block; width:24px; height:2px; background:var(--green-dark); border-radius:2px; transition:all 0.3s; }
-.sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:90; }
-.sidebar-overlay.active { display:block; }
-@media (max-width: 768px) {
-  #sidebar { position:fixed; right:-220px; top:0; height:100vh; transition:right 0.3s ease; z-index:100; }
-  #sidebar.open { right:0; }
-  #main { margin-right:0; }
-  #topbar { padding:12px 16px; }
-  #topbar h1 { font-size:16px; }
-  #content { padding:14px; }
-  .hamburger { display:flex; }
-  .stat-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
-  .stat-card .value { font-size:22px; }
-  .form-grid, .form-grid.wide { grid-template-columns:1fr; }
-  table { font-size:12px; }
-  th, td { padding:8px 10px; }
-  .btn { padding:8px 14px; font-size:13px; }
-  .card { padding:14px; }
-}
-
-body { overflow-x: hidden; }
 </style>
-
+<script>
+const CUSTOMERS_DB = [
+{id:1,name:"איחוד גור",type:"institutional",phone:"",mobile:"",city:"פתח תקווה",email:"",notes:"",orderCount:517,createdAt:'2024-01-01'},
+  {id:2,name:"דודי שכטר",type:"institutional",phone:"",mobile:"",city:"כפר חבד",email:"",notes:"",orderCount:160,createdAt:'2024-01-01'},
+  {id:3,name:"משה איידלמן",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:125,createdAt:'2024-01-01'},
+  {id:4,name:"נחלת יעקב",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:124,createdAt:'2024-01-01'},
+  {id:5,name:"רחל בוקשפן",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:101,createdAt:'2024-01-01'},
+  {id:6,name:"משה מילר/ברסלב חינוך וחסד",type:"institutional",phone:"058-4153-453",mobile:"058-4153-453",city:"תלפיות",email:"",notes:"",orderCount:71,createdAt:'2024-01-01'},
+  {id:7,name:"בנדיקט",type:"institutional",phone:"054-8458-853",mobile:"054-8458-853",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:69,createdAt:'2024-01-01'},
+  {id:8,name:"אלימלך מלכיאל",type:"institutional",phone:"",mobile:"",city:"מלון ענבל",email:"",notes:"",orderCount:69,createdAt:'2024-01-01'},
+  {id:9,name:"ישכר יאקאב פרטי",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:56,createdAt:'2024-01-01'},
+  {id:10,name:"אשר סולניק",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:47,createdAt:'2024-01-01'},
+  {id:11,name:"יוסי ברסי - נתיב הדעת",type:"institutional",phone:"058-7193-177",mobile:"058-7193-177",city:"מודיעין עילית",email:"",notes:"",orderCount:45,createdAt:'2024-01-01'},
+  {id:12,name:"צביקי קפלן",type:"institutional",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:38,createdAt:'2024-01-01'},
+  {id:13,name:"לאה פולק",type:"institutional",phone:"1732-6645-025",mobile:"1732-6645-025",city:"רמות- ירושלים",email:"",notes:"",orderCount:38,createdAt:'2024-01-01'},
+  {id:14,name:"ישכר יאקאב",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:37,createdAt:'2024-01-01'},
+  {id:15,name:"יענקל אטיק",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:36,createdAt:'2024-01-01'},
+  {id:16,name:"יהושע רייס",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:35,createdAt:'2024-01-01'},
+  {id:17,name:"חיים מאיר דושינסקי",type:"institutional",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:35,createdAt:'2024-01-01'},
+  {id:18,name:"לאבין-לקח השקעות",type:"institutional",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:35,createdAt:'2024-01-01'},
+  {id:19,name:"שמעון שישא",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:34,createdAt:'2024-01-01'},
+  {id:20,name:"זינגר שובו בנים",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:33,createdAt:'2024-01-01'},
+  {id:21,name:"בצלאל טויסיג",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:33,createdAt:'2024-01-01'},
+  {id:22,name:"לקוח",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:31,createdAt:'2024-01-01'},
+  {id:23,name:"ירוחם/אש התורה",type:"institutional",phone:"058-6127-559",mobile:"058-6127-559",city:"ירושלים",email:"",notes:"",orderCount:31,createdAt:'2024-01-01'},
+  {id:24,name:"ממלכת",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:30,createdAt:'2024-01-01'},
+  {id:25,name:"שרון אוחיון",type:"institutional",phone:"",mobile:"",city:"כפר חבד",email:"",notes:"",orderCount:28,createdAt:'2024-01-01'},
+  {id:26,name:"טולידאנו המאור שבתורה",type:"institutional",phone:"",mobile:"",city:"ארנונה",email:"",notes:"",orderCount:27,createdAt:'2024-01-01'},
+  {id:27,name:"שמחי רובינשטיין/פוקוס פרסום והפקות",type:"institutional",phone:"054-4848-517",mobile:"054-4848-517",city:"גבעת זאב",email:"",notes:"",orderCount:26,createdAt:'2024-01-01'},
+  {id:28,name:"מנדי איצקוביץ",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:26,createdAt:'2024-01-01'},
+  {id:29,name:"בית המדרש להלכה בהתיישבות",type:"institutional",phone:"",mobile:"",city:"נווה יעקב- ירושלים",email:"",notes:"",orderCount:25,createdAt:'2024-01-01'},
+  {id:30,name:"ישיבת בית הלל",type:"institutional",phone:"050-4129-486",mobile:"050-4129-486",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:24,createdAt:'2024-01-01'},
+  {id:31,name:"מאטעס דוידוביץ",type:"institutional",phone:"052-7670-643",mobile:"052-7670-643",city:"ירושלים",email:"",notes:"",orderCount:24,createdAt:'2024-01-01'},
+  {id:32,name:"אדרת התורה גווירצמן",type:"institutional",phone:"053-6235-292",mobile:"053-6235-292",city:"יהוד",email:"",notes:"",orderCount:23,createdAt:'2024-01-01'},
+  {id:33,name:"אמונת ציון",type:"institutional",phone:"050-4141-373",mobile:"050-4141-373",city:"חפץ חיים",email:"",notes:"",orderCount:22,createdAt:'2024-01-01'},
+  {id:34,name:"בית עולות",type:"institutional",phone:"053-9603-724",mobile:"053-9603-724",city:"ירושלים",email:"",notes:"",orderCount:22,createdAt:'2024-01-01'},
+  {id:35,name:"משה גולדקנופף",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:21,createdAt:'2024-01-01'},
+  {id:36,name:"רחל אברמובסקי",type:"institutional",phone:"050-4193-331",mobile:"050-4193-331",city:"ירושלים",email:"",notes:"",orderCount:21,createdAt:'2024-01-01'},
+  {id:37,name:"קצנלבויגן",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:20,createdAt:'2024-01-01'},
+  {id:38,name:"פרץ אייזנשטרק",type:"institutional",phone:"052-5454-748",mobile:"052-5454-748",city:"ירושלים",email:"",notes:"",orderCount:20,createdAt:'2024-01-01'},
+  {id:39,name:"פלברבוים- קאזניץ ירושלים",type:"institutional",phone:"053-3139-446",mobile:"053-3139-446",city:"",email:"",notes:"",orderCount:19,createdAt:'2024-01-01'},
+  {id:40,name:"עלי שיח",type:"institutional",phone:"",mobile:"",city:"ביתר",email:"",notes:"",orderCount:19,createdAt:'2024-01-01'},
+  {id:41,name:"שמואל אריה עקשטיין",type:"institutional",phone:"1347-5632-712",mobile:"1347-5632-712",city:"ירושלים",email:"",notes:"",orderCount:19,createdAt:'2024-01-01'},
+  {id:42,name:"נועם",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:43,name:"רבקה פוגל",type:"institutional",phone:"052-7102-294",mobile:"052-7102-294",city:"גבעת שאול- ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:44,name:"ווייל מינהל קהילתי גינות העיר",type:"institutional",phone:"055-6873-160",mobile:"055-6873-160",city:"רעננה",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:45,name:"ישיבת ברכת ישראל",type:"institutional",phone:"",mobile:"",city:"מלון מצודת דוד",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:46,name:"זעבי בעער",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:47,name:"דוב קלוגר",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:48,name:"ושננתם",type:"institutional",phone:"052-7623-388",mobile:"052-7623-388",city:"",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:49,name:"פולק",type:"institutional",phone:"",mobile:"",city:"הר חוצבים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:50,name:"שרי מתנס רוממה",type:"institutional",phone:"052-3264-670",mobile:"052-3264-670",city:"ירושלים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:51,name:"ליינער",type:"institutional",phone:"052-7678-998",mobile:"052-7678-998",city:"ירושלים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:52,name:"שמחה בוואצאפ",type:"institutional",phone:"054-9748-017",mobile:"054-9748-017",city:"ירושלים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:53,name:"מוטי דושינסקי",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:16,createdAt:'2024-01-01'},
+  {id:54,name:"אליהו שטיין",type:"institutional",phone:"055-3316-702",mobile:"055-3316-702",city:"ארמון הנציב",email:"",notes:"",orderCount:16,createdAt:'2024-01-01'},
+  {id:55,name:"מכון למורים",type:"institutional",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:16,createdAt:'2024-01-01'},
+  {id:56,name:"משה שטיין",type:"private",phone:"050-3404-012",mobile:"050-3404-012",city:"איסוף עצמי",email:"",notes:"",orderCount:15,createdAt:'2024-01-01'},
+  {id:57,name:"מנדי זלמן",type:"private",phone:"053-3135-138",mobile:"053-3135-138",city:"רמות- ירושלים",email:"",notes:"",orderCount:15,createdAt:'2024-01-01'},
+  {id:58,name:"שרית גרינבוים/ישיבת דרך השם",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:59,name:"מאיר אייזנברג",type:"private",phone:"053-2700-808",mobile:"053-2700-808",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:60,name:"שלמה בן שעיה",type:"private",phone:"052-7665-991",mobile:"052-7665-991",city:"איסוף עצמי",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:61,name:"אפקט לייבי זילברברג",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:62,name:"דניאל גלייך ארה\"ב",type:"private",phone:"1845-3044-949",mobile:"1845-3044-949",city:"",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:63,name:"מנחם ליפמן",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:64,name:"ברלה בוקשפן יש תקווה",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:65,name:"נשמת בית יעקב",type:"private",phone:"055-3308-594",mobile:"055-3308-594",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:66,name:"אנקת אסיר",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:67,name:"פרץ הירשנבוים",type:"private",phone:"054-9355-376",mobile:"054-9355-376",city:"קרית משה- ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:68,name:"בעער",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:69,name:"סולם",type:"private",phone:"052-7635-113",mobile:"052-7635-113",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:70,name:"יצחק מאיר פשיטיק",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:71,name:"שמעון רכטשפר",type:"private",phone:"",mobile:"",city:"מישור אדומים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:72,name:"יחיאל זיכרמן",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:73,name:"לקוחה",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:74,name:"בנימין זאב כהן",type:"private",phone:"052-2176-081",mobile:"052-2176-081",city:"",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:75,name:"שמעונוביץ",type:"private",phone:"054-8455-160",mobile:"054-8455-160",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:76,name:"ישראל רובינפלד 2",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:77,name:"אהרן ויינברג",type:"private",phone:"053-3160-170",mobile:"053-3160-170",city:"מודיעין עילית",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:78,name:"חיים",type:"private",phone:"053-7172-421",mobile:"053-7172-421",city:"ירושלים",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:79,name:"מ. וואזנר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:80,name:"כהנא",type:"private",phone:"052-7625-330",mobile:"052-7625-330",city:"איסוף עצמי",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:81,name:"שלמה וייס- ויזניץ",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:82,name:"אלישבע גרליץ",type:"private",phone:"050-4147-891",mobile:"050-4147-891",city:"מישור אדומים",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:83,name:"הערשי יוזשעף-ישיבת נחלת יעקב",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:84,name:"ישראל רכניצר - אלכסנדר",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:85,name:"אברימי הולנדר",type:"private",phone:"",mobile:"",city:"אזור יפו",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:86,name:"יידי פרנקל",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:87,name:"שלמה זילברברג",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:88,name:"דבי גין וואטצאפ",type:"private",phone:"1561-4007-796",mobile:"1561-4007-796",city:"פתח תקווה",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:89,name:"מיכל בן שלום",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:90,name:"גרשון פלברבוים",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:91,name:"גוטמן",type:"private",phone:"053-3178-315",mobile:"053-3178-315",city:"רמות- ירושלים",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:92,name:"בית הלל",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:93,name:"יעקב בנין בשביעית",type:"private",phone:"",mobile:"",city:"טלזסטון",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:94,name:"שלום ברדנמרק",type:"private",phone:"",mobile:"",city:"ירושלים רחוק",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:95,name:"משה רפאל לויפער",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:96,name:"אשר יונה כץ/דרך אמת עפולה",type:"private",phone:"054-8467-514",mobile:"054-8467-514",city:"רמות- ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:97,name:"זלמן סורוצקין",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:98,name:"עקיבא אופן",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:99,name:"יצחק",type:"private",phone:"052-8511-701",mobile:"052-8511-701",city:"איסוף עצמי",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:100,name:"ישיבת בית אברהם סלונים",type:"private",phone:"053-3195-479",mobile:"053-3195-479",city:"",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:101,name:"מוישי הירש",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:102,name:"מרגרטן",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:103,name:"יוסי באנדא",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:104,name:"חיה גילקרוב",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:105,name:"ראובן גשייד -רחשי לב",type:"private",phone:"",mobile:"",city:"שכונת בקה",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:106,name:"תמר חסדי יוסף",type:"private",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:107,name:"קופמן",type:"private",phone:"050-4174-595",mobile:"050-4174-595",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:108,name:"לוי יצחק לעווי",type:"private",phone:"055-6759-685",mobile:"055-6759-685",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:109,name:"ניסים גרינבוקס",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:110,name:"ליברמן",type:"private",phone:"058-3215-255",mobile:"058-3215-255",city:"איסוף עצמי",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:111,name:"דונט",type:"private",phone:"052-7693-825",mobile:"052-7693-825",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:112,name:"רפאל מרקוס",type:"private",phone:"054-8444-901",mobile:"054-8444-901",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:113,name:"יוסף חיים",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:114,name:"ברומברג",type:"private",phone:"058-3247-281",mobile:"058-3247-281",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:115,name:"נבנצל",type:"private",phone:"054-8429-544",mobile:"054-8429-544",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:116,name:"יעקב פינקוס - ונתנו ידידים",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:117,name:"שמירת הלשון",type:"private",phone:"",mobile:"",city:"גילה",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:118,name:"לוין",type:"private",phone:"002-5713-136",mobile:"002-5713-136",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:119,name:"וועלוול כהנשטם",type:"private",phone:"1718-3409-364",mobile:"1718-3409-364",city:"בית שמש",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:120,name:"אלעזר מייזליש",type:"private",phone:"",mobile:"",city:"סנהדריה",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:121,name:"איידלמן 2",type:"private",phone:"053-3183-635",mobile:"053-3183-635",city:"קריית מוצקין",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:122,name:"וואזנר מ",type:"private",phone:"44744-7000-000",mobile:"44744-7000-000",city:"",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:123,name:"ווייס",type:"private",phone:"053-3178-285",mobile:"053-3178-285",city:"איסוף עצמי",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:124,name:"ישראל רכניצר אלכסנדר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:125,name:"רוזנבוים",type:"private",phone:"050-4183-603",mobile:"050-4183-603",city:"בני ברק",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:126,name:"משה",type:"private",phone:"058-7165-595",mobile:"058-7165-595",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:127,name:"יוכבד 2",type:"private",phone:"053-5896-898",mobile:"053-5896-898",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:128,name:"בידרמן 3",type:"private",phone:"052-7683-489",mobile:"052-7683-489",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:129,name:"שלום אסט",type:"private",phone:"058-3263-213",mobile:"058-3263-213",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:130,name:"א ארנסטר",type:"private",phone:"050-6950-007",mobile:"050-6950-007",city:"אור יהודה",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:131,name:"חיים ט/מוסדות התורה והחינוך גור ערד",type:"private",phone:"052-7133-346",mobile:"052-7133-346",city:"אשדוד",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:132,name:"רבינוביץ",type:"private",phone:"052-7161-194",mobile:"052-7161-194",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:133,name:"חני רובינשטיין",type:"private",phone:"053-3155-385",mobile:"053-3155-385",city:"איסוף עצמי",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:134,name:"פלא יועץ דאכנער",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:135,name:"ליפשיץ",type:"private",phone:"002-5802-525",mobile:"002-5802-525",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:136,name:"סמינר דרכי רחל",type:"private",phone:"052-7162-386",mobile:"052-7162-386",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:137,name:"הורביץ",type:"private",phone:"055-3225-756",mobile:"055-3225-756",city:"רמת אשכול",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:138,name:"דייטש",type:"private",phone:"058-3285-770",mobile:"058-3285-770",city:"ביתר",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:139,name:"זלטי וולף",type:"private",phone:"054-3373-335",mobile:"054-3373-335",city:"ביתר",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:140,name:"שטרן",type:"private",phone:"050-4129-209",mobile:"050-4129-209",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:141,name:"ש.ל.ד יזמות ובניה",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:142,name:"שלמה פשיטיק גור",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:143,name:"פרידמן",type:"private",phone:"054-8471-529",mobile:"054-8471-529",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:144,name:"יד עזרא ושולמית",type:"private",phone:"054-8593-943",mobile:"054-8593-943",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:145,name:"טנדלר",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:146,name:"הלל מן",type:"private",phone:"050-4129-486",mobile:"050-4129-486",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:147,name:"שרה קאליש",type:"private",phone:"052-7607-765",mobile:"052-7607-765",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:148,name:"רחל ברוק",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:149,name:"יחזקאל",type:"private",phone:"054-8452-264",mobile:"054-8452-264",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:150,name:"מונדרר-תולדות אברהם יצחק",type:"private",phone:"053-3192-466",mobile:"053-3192-466",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:151,name:"רוזנפלד",type:"private",phone:"053-3129-794",mobile:"053-3129-794",city:"איסוף עצמי",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:152,name:"לייבי זילברברג- אפקט",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:153,name:"תמיר- אש התורה",type:"private",phone:"",mobile:"",city:"ימין משה",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:154,name:"אברהם פרל-מכון למורים",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:155,name:"יידי שווארץ ארה\"ב",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:156,name:"אליהו אסייג",type:"private",phone:"",mobile:"",city:"סביון",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:157,name:"רחל נובוסלר",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:158,name:"ברקוביץ",type:"private",phone:"053-3113-052",mobile:"053-3113-052",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:159,name:"אסתי אורנג",type:"private",phone:"052-7628-036",mobile:"052-7628-036",city:"ארנונה",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:160,name:"שווארץ",type:"private",phone:"053-4153-296",mobile:"053-4153-296",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:161,name:"בעער - 2",type:"private",phone:"054-8448-883",mobile:"054-8448-883",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:162,name:"ריבלין",type:"private",phone:"054-8495-657",mobile:"054-8495-657",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:163,name:"מוסדות דארג",type:"private",phone:"052-7169-009",mobile:"052-7169-009",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:164,name:"יואל פאר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:165,name:"פרלמן",type:"private",phone:"052-7698-535",mobile:"052-7698-535",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:166,name:"אלישבע טעמן נדלן",type:"private",phone:"052-7112-267",mobile:"052-7112-267",city:"קדומים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:167,name:"מרקוס",type:"private",phone:"054-8444-901",mobile:"054-8444-901",city:"נווה יעקב- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:168,name:"שרה פרנקל",type:"private",phone:"1917-5131-730",mobile:"1917-5131-730",city:"סנהדריה",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:169,name:"גרוסברד מאיר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:170,name:"זאנוויל ווינברגר",type:"private",phone:"058-4890-139",mobile:"058-4890-139",city:"גבעת זאב",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:171,name:"שמעלקע קיין",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:172,name:"פריזל",type:"private",phone:"052-7639-615",mobile:"052-7639-615",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:173,name:"הולצמן 2",type:"private",phone:"053-3131-797",mobile:"053-3131-797",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:174,name:"חני לונדון",type:"private",phone:"",mobile:"",city:"ביתר",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:175,name:"ברזסקי",type:"private",phone:"1845-9286-568",mobile:"1845-9286-568",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:176,name:"וילינגר",type:"private",phone:"052-7175-235",mobile:"052-7175-235",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:177,name:"דבורה גליק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:178,name:"שלמה לודמיר",type:"private",phone:"052-7125-340",mobile:"052-7125-340",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:179,name:"יחיאל ויספיש",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:180,name:"שטיין",type:"private",phone:"1929-4866-676",mobile:"1929-4866-676",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:181,name:"עקשטיין וילמסבורג",type:"private",phone:"347-5632-712",mobile:"347-5632-712",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:182,name:"פרוכטהנדלר",type:"private",phone:"547833666",mobile:"547833666",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:183,name:"רב להושיע",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:184,name:"אתרוג",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:185,name:"שיינברגר דושינסקי",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:186,name:"דפנה",type:"private",phone:"053-3925-137",mobile:"053-3925-137",city:"רמות- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:187,name:"ראובן פולטשעק",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:188,name:"רוטמן ישראל אשר",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:189,name:"שמחה בונים שכטר",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:190,name:"רחלי- עץ הדעת",type:"private",phone:"",mobile:"",city:"רמת שלמה- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:191,name:"אפקט א. זילברברג",type:"private",phone:"",mobile:"",city:"אשדוד",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:192,name:"וויליגער",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:193,name:"חיה קלמן",type:"private",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:194,name:"משרד JRC",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:195,name:"מירי פולישוק",type:"private",phone:"",mobile:"",city:"נווה יעקב- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:196,name:"יחזקל בוואצאפ",type:"private",phone:"",mobile:"",city:"רמת גן",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:197,name:"שמעון דוד דאווידאוויטש",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:198,name:"כהן",type:"private",phone:"052-7108-528",mobile:"052-7108-528",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:199,name:"שלום ברנדמרק",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:200,name:"יואלי שפילמן",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:201,name:"מוטי",type:"private",phone:"052-4258-842",mobile:"052-4258-842",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:202,name:"גדליה מנדלסון",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:203,name:"קליין",type:"private",phone:"053-4136-854",mobile:"053-4136-854",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:204,name:"קהל יטב לב בני ברק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:205,name:"מוטי גליק",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:206,name:"ר. בן דוד",type:"private",phone:"054-8439-110",mobile:"054-8439-110",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:207,name:"נתנאל",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:208,name:"פיינשטיין",type:"private",phone:"055-5210-280",mobile:"055-5210-280",city:"סנהדריה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:209,name:"גוטליב",type:"private",phone:"050-4131-039",mobile:"050-4131-039",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:210,name:"יצחק רוזנפלד פינסק קרלין",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:211,name:"שמואל הר זהב",type:"private",phone:"053-3187-870",mobile:"053-3187-870",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:212,name:"מרדכי רובין- ביאלא",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:213,name:"מגדל אור",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:214,name:"פרוש",type:"private",phone:"052-7654-770",mobile:"052-7654-770",city:"רמת שלמה- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:215,name:"ישראל מונטג/פני מנחם בית שמש",type:"private",phone:"053-3199-910",mobile:"053-3199-910",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:216,name:"סמט",type:"private",phone:"050-4156-584",mobile:"050-4156-584",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:217,name:"זלמן פרידמן",type:"private",phone:"053-4713-528",mobile:"053-4713-528",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:218,name:"חיים מאיר דושינסקיא",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:219,name:"יעקב",type:"private",phone:"058-3208-131",mobile:"058-3208-131",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:220,name:"ליבוביץ משה לייב בעזרי",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:221,name:"יעקבזון- תעצומות",type:"private",phone:"052-7669-701",mobile:"052-7669-701",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:222,name:"שרה",type:"private",phone:"055-2644-433",mobile:"055-2644-433",city:"הדסה עין כרם",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:223,name:"גנון",type:"private",phone:"",mobile:"",city:"הר חומה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:224,name:"שרה שליידר",type:"private",phone:"",mobile:"",city:"גבעת המבתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:225,name:"גוטפרב",type:"private",phone:"054-8430-868",mobile:"054-8430-868",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:226,name:"מלכי רייכר",type:"private",phone:"",mobile:"",city:"מלון ירמיהו- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:227,name:"שיינפלד קופת שמואל הנביא",type:"private",phone:"052-7135-111",mobile:"052-7135-111",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:228,name:"רחל טייב",type:"private",phone:"054-8359-010",mobile:"054-8359-010",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:229,name:"מרים ריינשטיין",type:"private",phone:"052-6071-073",mobile:"052-6071-073",city:"ירושלים רחוק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:230,name:"פרקל",type:"private",phone:"054-4517-501",mobile:"054-4517-501",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:231,name:"פנחס טאומן",type:"private",phone:"058-3979-500",mobile:"058-3979-500",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:232,name:"ספרין",type:"private",phone:"052-7137-998",mobile:"052-7137-998",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:233,name:"רות מילר",type:"private",phone:"",mobile:"",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:234,name:"ישראל רוזנפלד",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:235,name:"מגדיל ישועות",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:236,name:"שני זמל",type:"private",phone:"054-7290-010",mobile:"054-7290-010",city:"מודיעין",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:237,name:"לייטנר",type:"private",phone:"058-7870-958",mobile:"058-7870-958",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:238,name:"פרץ",type:"private",phone:"052-7142-543",mobile:"052-7142-543",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:239,name:"דודי קנופלר",type:"private",phone:"",mobile:"",city:"גוש עציון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:240,name:"רחל רוזנפלד",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:241,name:"מאיר שטיין",type:"private",phone:"052-5458-777",mobile:"052-5458-777",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:242,name:"דודי שוורץ טהרת המשפחה",type:"private",phone:"058-6272-852",mobile:"058-6272-852",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:243,name:"אלי שיף",type:"private",phone:"054-4446-070",mobile:"054-4446-070",city:"שכונת בקה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:244,name:"אלטוסקי",type:"private",phone:"002-5618-558",mobile:"002-5618-558",city:"קרית גת",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:245,name:"אלישבע",type:"private",phone:"058-3233-040",mobile:"058-3233-040",city:"ימין משה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:246,name:"עמרם גרינוולד 2",type:"private",phone:"053-3111-695",mobile:"053-3111-695",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:247,name:"אברומובסקי",type:"private",phone:"050-4193-331",mobile:"050-4193-331",city:"חולון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:248,name:"מזכירות בית עולות",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:249,name:"אייכן",type:"private",phone:"052-5223-549",mobile:"052-5223-549",city:"תל ציון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:250,name:"משה אריה הרשקוביץ",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:251,name:"ריקי שפירא",type:"private",phone:"054-4544-173",mobile:"054-4544-173",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:252,name:"רוחי אילוביץ בוואצאפ",type:"private",phone:"054-3103-448",mobile:"054-3103-448",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:253,name:"הרצל",type:"private",phone:"053-3109-748",mobile:"053-3109-748",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:254,name:"אהרן מרדר",type:"private",phone:"054-8592-558",mobile:"054-8592-558",city:"מושה עמינדב",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:255,name:"שלאס יעקב אשר",type:"private",phone:"050-4123-020",mobile:"050-4123-020",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:256,name:"יעקב שפירא",type:"private",phone:"055-6763-736",mobile:"055-6763-736",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:257,name:"יהושע פרקוביץ",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:258,name:"ריווי בארד",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:259,name:"מינהל קהילתי מעלה רמות",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:260,name:"לבנה  הרוש",type:"private",phone:"",mobile:"",city:"קרית משה- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:261,name:"נחום קורפו",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:262,name:"בית לפליטות",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:263,name:"שידלובסקי",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:264,name:"יהודית זידלה",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:265,name:"מוסדות זוויהל",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:266,name:"בנימין רוטנברג",type:"private",phone:"",mobile:"",city:"קטמון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:267,name:"אפרים שטרן ארה\"ב",type:"private",phone:"",mobile:"",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:268,name:"תורה ותפילה",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:269,name:"חיה לוין",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:270,name:"נחמן ישורון",type:"private",phone:"",mobile:"",city:"רמת שלמה- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:271,name:"משה גליס",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:272,name:"מיכל",type:"private",phone:"054-2548-420",mobile:"054-2548-420",city:"הר חוצבים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:273,name:"נתן",type:"private",phone:"054-3775-779",mobile:"054-3775-779",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:274,name:"יהושע ווינברגר מוסדות צאנז",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:275,name:"ישראל",type:"private",phone:"054-8413-595",mobile:"054-8413-595",city:"ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:276,name:"לוי",type:"private",phone:"1917-6817-005",mobile:"1917-6817-005",city:"איסוף עצמי",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:277,name:"ידידיה מוסדות דאראג",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:278,name:"איטי",type:"private",phone:"",mobile:"",city:"קוממיות",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:279,name:"בנצי וויינטרויב מפיק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:280,name:"לבנה הרוש- תב\"ע קפיטל",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:281,name:"יצחק פרידמן",type:"private",phone:"347-6783-254",mobile:"347-6783-254",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:282,name:"רובין",type:"private",phone:"058-3296-929",mobile:"058-3296-929",city:"ירושלים רחוק",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:283,name:"חיים לוברבום",type:"private",phone:"052-7681-995",mobile:"052-7681-995",city:"ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:284,name:"רבקי פרוש/לימון מילה של איכות",type:"private",phone:"073-7693-799",mobile:"073-7693-799",city:"בית שמש",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:285,name:"חיה הורביץ",type:"private",phone:"054-8419-990",mobile:"054-8419-990",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:286,name:"מתנה פופקא",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:287,name:"נחמה פיק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:288,name:"סנקביץ ישראל",type:"private",phone:"050-5988-178",mobile:"050-5988-178",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:289,name:"אפרים לודמיר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:290,name:"איצקוביץ בנציון",type:"private",phone:"054-8461-075",mobile:"054-8461-075",city:"הדסה עין כרם",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:291,name:"רבינוביץ חיים",type:"private",phone:"052-5654-000",mobile:"052-5654-000",city:"ביתר",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:292,name:"גני ילדים בית יעקב",type:"private",phone:"050-4150-145",mobile:"050-4150-145",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:293,name:"ווייס הרב",type:"private",phone:"002-5387-410",mobile:"002-5387-410",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:294,name:"חנוך אייזנברג",type:"private",phone:"",mobile:"",city:"מלון דן",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:295,name:"איידלמן",type:"private",phone:"058-3291-341",mobile:"058-3291-341",city:"קריית ים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:296,name:"ישראל סגל",type:"private",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:297,name:"שאול פלדמן",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:298,name:"צינוירט",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:299,name:"רוזמן",type:"private",phone:"052-7158-412",mobile:"052-7158-412",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:300,name:"דודק",type:"private",phone:"053-3108-110",mobile:"053-3108-110",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'}
+];
+const EMPLOYEES_DB = [
+{id:1,name:"אייזיק",phone:'',role:'מזכירה'},
+  {id:2,name:"חיה שורי",phone:'',role:'מזכירה'},
+  {id:3,name:"יוכבד",phone:'',role:'מזכירה'},
+  {id:4,name:"שרה הירש",phone:'',role:'מזכירה'}
+];
+</script>
+<script src="data.js"></script>
 </head>
 <body>
 
@@ -275,6 +603,8 @@ body { overflow-x: hidden; }
       <a data-page="orders"><span class="icon">📋</span> הזמנות</a>
       <a data-page="new-order"><span class="icon">➕</span> הזמנה חדשה</a>
       <a data-page="customers"><span class="icon">👥</span> לקוחות</a>
+      <a data-page="employees"><span class="icon">👩‍💼</span> עובדות</a>
+      <a data-page="reports"><span class="icon">📊</span> דוחות</a>
       <a data-page="products"><span class="icon">🍎</span> מוצרים</a>
       <a data-page="collection"><span class="icon">💰</span> גביה</a>
       <a data-page="work"><span class="icon">🏭</span> מסך עבודה</a>
@@ -282,12 +612,16 @@ body { overflow-x: hidden; }
     <div class="version">גרסה 1.0 | עיצוב בפרי</div>
   </div>
 
+  <!-- Sidebar overlay for mobile -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
   <!-- Main -->
   <div id="main">
-    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
     <div id="topbar">
       <div style="display:flex;align-items:center;gap:12px;">
-        <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+        <button class="hamburger" onclick="toggleSidebar()" aria-label="תפריט">
+          <span></span><span></span><span></span>
+        </button>
         <h1 id="page-title">דשבורד</h1>
       </div>
       <div class="topbar-actions" id="topbar-actions"></div>
@@ -302,30 +636,10 @@ body { overflow-x: hidden; }
 <script>
 // ===================== DATA STORE =====================
 const DB = {
-  customers: [
-{id:1,name:"איחוד גור",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:517,createdAt:"2024-01-01"},
-{id:2,name:"דודי שכטר",type:"institutional",phone:"",mobile:"",city:"כפר חבד",orderCount:160,createdAt:"2024-01-01"},
-{id:3,name:"משה איידלמן",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:125,createdAt:"2024-01-01"},
-{id:4,name:"נחלת יעקב",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:124,createdAt:"2024-01-01"},
-{id:5,name:"רחל בוקשפן",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:101,createdAt:"2024-01-01"},
-{id:6,name:"בנדיקט",type:"institutional",phone:"054-8458-853",mobile:"054-8458-853",city:"בית וגן- ירושלים",orderCount:69,createdAt:"2024-01-01"},
-{id:7,name:"אשר סולניק",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:47,createdAt:"2024-01-01"},
-{id:8,name:"ישכר יאקאב",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:37,createdAt:"2024-01-01"},
-{id:9,name:"יענקל אטיק",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:36,createdAt:"2024-01-01"},
-{id:10,name:"אמונת ציון",type:"institutional",phone:"050-4141-373",mobile:"050-4141-373",city:"חפץ חיים",orderCount:22,createdAt:"2024-01-01"},
-{id:11,name:"יהושע רייס",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:35,createdAt:"2024-01-01"},
-{id:12,name:"פרץ הירשנבוים",type:"private",phone:"054-9355-376",mobile:"054-9355-376",city:"קרית משה- ירושלים",orderCount:13,createdAt:"2024-01-01"},
-{id:13,name:"אהרן ויינברג",type:"private",phone:"053-3160-170",mobile:"053-3160-170",city:"מודיעין עילית",orderCount:12,createdAt:"2024-01-01"},
-{id:14,name:"שלמה בן שעיה",type:"private",phone:"052-7665-991",mobile:"052-7665-991",city:"ירושלים",orderCount:14,createdAt:"2024-01-01"},
-{id:15,name:"תמר גדידי",type:"private",phone:"",mobile:"",city:"ירושלים",orderCount:5,createdAt:"2024-01-01"},
-{id:16,name:"דוד יוחנן",type:"private",phone:"",mobile:"",city:"ירושלים",orderCount:4,createdAt:"2024-01-01"},
-{id:17,name:"בערל דאווידאויטש",type:"private",phone:"",mobile:"",city:"ירושלים",orderCount:3,createdAt:"2024-01-01"},
-{id:18,name:"קויפמן",type:"private",phone:"050-4174-595",mobile:"050-4174-595",city:"ירושלים",orderCount:9,createdAt:"2024-01-01"},
-{id:19,name:"שמואל קמרסקי",type:"private",phone:"",mobile:"",city:"ירושלים",orderCount:4,createdAt:"2024-01-01"},
-{id:20,name:"נפתלי אינדיג",type:"private",phone:"",mobile:"",city:"ירושלים",orderCount:3,createdAt:"2024-01-01"}
-],
-  employees: [{id:1,name:"יוכבד",phone:"",role:"מזכירה"},{id:2,name:"שרה הירש",phone:"",role:"מזכירה"},{id:3,name:"חיה שורי",phone:"",role:"מזכירה"},{id:4,name:"אייזיק",phone:"",role:"מזכירה"}],
-  products: [
+  get customers() { return typeof CUSTOMERS_DB !== 'undefined' ? CUSTOMERS_DB : this._customers || []; },
+  set customers(v) { this._customers = v; },
+  employees: typeof EMPLOYEES_DB !== "undefined" ? EMPLOYEES_DB : [],
+  products:  products: [
     { id: 1, sku: "102", name: "סל פירות מק\"ט 102", content: "פירות עונתיים בעיצוב מיוחד", length: 0, width: 0, weight: 0, price: 300, price_usd: 74, catalog: "כללי 2026" },
     { id: 2, sku: "101", name: "סל פירות מק\"ט 101", content: "פירות עונתיים בעיצוב מיוחד", length: 0, width: 0, weight: 0, price: 300, price_usd: 74, catalog: "כללי 2026" },
     { id: 3, sku: "250", name: "סל פירות מק\"ט 250", content: "פירות עונתיים בעיצוב מיוחד", length: 0, width: 0, weight: 0, price: 300, price_usd: 74, catalog: "כללי 2026" },
@@ -466,9 +780,48 @@ const DB = {
     { id: 138, sku: "s187", name: "עיצוב שבועות מק\"ט s187", content: "עיצוב מיוחד לשבועות", length: 0, width: 0, weight: 0, price: 540, price_usd: 187, catalog: "שבועות תשפ\"ו" },
   ],
   orders: [
-    { id: 1001, orderNum: 'HF-1001', customerId: 1, customerName: 'שרה כהן', customerType: 'private', deliveryDate: '2024-06-10', deliveryTime: '10:00', city: 'ירושלים', firstName: 'שרה', lastName: 'כהן', phone: '052-1111111', mobile: '050-1111111', productId: 1, productName: 'סל פירות מק"ט 102', notes: '', blessing: 'מזל טוב!', kafe: 50, designPrice: 300, deliveryCost: 40, graphicsCost: 0, paymentMethod: 'credit', paymentDone: true, totalPrice: 390, deliveryTo: 'משפחת לוי', address: "רח' הצבי 5", entrance: 'א', floor: '3', apt: '12', neighborhood: 'גילה', senderName: 'שרה כהן', senderPhone: '052-1111111', senderMobile: '050-1111111', receiverName: 'רחל לוי', receiverPhone: '053-3333333', receiverMobile: '053-3333333', deliveryNotes: '', status: 'done', paymentStatus: 'paid', colklarDone: true, fruitsDone: true, closeDone: true, createdAt: '2024-06-05' },
-    { id: 1002, orderNum: 'HF-1002', customerId: 2, customerName: 'רחל לוי', customerType: 'private', deliveryDate: '2024-06-12', deliveryTime: '14:00', city: 'חיפה', firstName: 'רחל', lastName: 'לוי', phone: '053-2222222', mobile: '053-2222222', productId: 3, productName: 'עיצוב שבועות מק"ט s101', notes: '', blessing: 'ברכות!', kafe: 80, designPrice: 275, deliveryCost: 60, graphicsCost: 30, paymentMethod: 'transfer', paymentDone: false, totalPrice: 445, deliveryTo: 'משפחת אברהם', address: "שד' הנשיא 20", entrance: 'ב', floor: '5', apt: '18', neighborhood: 'כרמל', senderName: 'רחל לוי', senderPhone: '053-2222222', senderMobile: '053-2222222', receiverName: 'דוד אברהם', receiverPhone: '054-4444444', receiverMobile: '054-4444444', deliveryNotes: '', status: 'in-progress', paymentStatus: 'pending', colklarDone: false, fruitsDone: false, closeDone: false, createdAt: '2024-06-08' },
-    { id: 1003, orderNum: 'HF-1003', customerId: 3, customerName: 'איחוד גור', customerType: 'institutional', deliveryDate: '2024-06-15', deliveryTime: '09:00', city: 'ירושלים', firstName: 'דוד', lastName: 'מנהל', phone: '02-5555555', mobile: '054-5555555', productId: 4, productName: 'סל פירות מק"ט 104', notes: '5 מגשים', blessing: '', kafe: 0, designPrice: 1900, deliveryCost: 100, graphicsCost: 0, paymentMethod: 'check', paymentDone: false, totalPrice: 2000, deliveryTo: 'איחוד גור', address: "רח' ויצמן 55", entrance: '', floor: '1', apt: '', neighborhood: '', senderName: 'עיצוב בפרי', senderPhone: '054-8468002', senderMobile: '054-8468002', receiverName: 'מזכירות', receiverPhone: '02-5555555', receiverMobile: '', deliveryNotes: 'למסור למזכירות', status: 'waiting', paymentStatus: 'pending', colklarDone: false, fruitsDone: false, closeDone: false, createdAt: '2024-06-09' }
+    {
+      id: 1001, orderNum: 'HF-1001', customerId: 1, customerName: 'שרה כהן', customerType: 'private',
+      deliveryDate: '2024-06-10', deliveryTime: '10:00', city: 'ירושלים',
+      firstName: 'שרה', lastName: 'כהן', phone: '052-1111111', mobile: '050-1111111',
+      productId: 1, productName: 'סל פירות מק"ט 102', notes: 'בלי ענבים', blessing: 'מזל טוב לחתונה!',
+      kafe: 50, designPrice: 300, deliveryCost: 40, graphicsCost: 0,
+      paymentMethod: 'credit', paymentDone: true, totalPrice: 390,
+      deliveryTo: 'משפחת לוי', address: "רח' הצבי 5", entrance: 'א', floor: '3', apt: '12', neighborhood: 'גילה',
+      senderName: 'שרה כהן', senderPhone: '052-1111111', senderMobile: '050-1111111',
+      receiverName: 'רחל לוי', receiverPhone: '053-3333333', receiverMobile: '053-3333333',
+      deliveryNotes: 'להשאיר בכניסה אם אין עונים',
+      status: 'done', paymentStatus: 'paid',
+      colklarDone: true, fruitsDone: true, closeDone: true, createdAt: '2024-06-05'
+    },
+    {
+      id: 1002, orderNum: 'HF-1002', customerId: 2, customerName: 'רחל לוי', customerType: 'private',
+      deliveryDate: '2024-06-12', deliveryTime: '14:00', city: 'חיפה',
+      firstName: 'רחל', lastName: 'לוי', phone: '053-2222222', mobile: '053-2222222',
+      productId: 3, productName: 'עיצוב שבועות מק"ט s101', notes: '', blessing: 'ברכות לגיל 50',
+      kafe: 80, designPrice: 275, deliveryCost: 60, graphicsCost: 30,
+      paymentMethod: 'transfer', paymentDone: false, totalPrice: 445,
+      deliveryTo: 'משפחת אברהם', address: "שד' הנשיא 20", entrance: 'ב', floor: '5', apt: '18', neighborhood: 'כרמל',
+      senderName: 'רחל לוי', senderPhone: '053-2222222', senderMobile: '053-2222222',
+      receiverName: 'דוד אברהם', receiverPhone: '054-4444444', receiverMobile: '054-4444444',
+      deliveryNotes: '',
+      status: 'in-progress', paymentStatus: 'pending',
+      colklarDone: false, fruitsDone: false, closeDone: false, createdAt: '2024-06-08'
+    },
+    {
+      id: 1003, orderNum: 'HF-1003', customerId: 3, customerName: 'איחוד גור', customerType: 'institutional',
+      deliveryDate: '2024-06-15', deliveryTime: '09:00', city: 'ירושלים',
+      firstName: 'דוד', lastName: 'מנהל', phone: '02-5555555', mobile: '054-5555555',
+      productId: 4, productName: 'סל פירות מק"ט 104', notes: '5 מגשים', blessing: '',
+      kafe: 0, designPrice: 1900, deliveryCost: 100, graphicsCost: 0,
+      paymentMethod: 'check', paymentDone: false, totalPrice: 2000,
+      deliveryTo: 'איחוד גור', address: "רח' ויצמן 55", entrance: '', floor: '1', apt: '', neighborhood: '',
+      senderName: 'עיצוב בפרי', senderPhone: '054-8468002', senderMobile: '054-8468002',
+      receiverName: 'מזכירות', receiverPhone: '02-5555555', receiverMobile: '',
+      deliveryNotes: 'למסור למזכירות',
+      status: 'waiting', paymentStatus: 'pending',
+      colklarDone: false, fruitsDone: false, closeDone: false, createdAt: '2024-06-09'
+    }
   ],
   nextId: 1004,
   nextCustomerId: 4,
@@ -516,7 +869,7 @@ function escHtml(s) {
 
 // ===================== LOGO =====================
 // Logo stored as data URL (user's logo)
-const LOGO_SRC = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cellipse cx='50' cy='62' rx='36' ry='40' fill='%239BBF3A'/%3E%3Crect x='14' y='54' width='72' height='10' fill='%236B8F2A'/%3E%3Crect x='14' y='64' width='72' height='10' fill='%233E5C1A'/%3E%3Crect x='16' y='74' width='68' height='10' fill='%23B89A28' rx='2'/%3E%3Cellipse cx='50' cy='62' rx='36' ry='40' fill='none' stroke='%233E5C1A' stroke-width='1.5'/%3E%3Cellipse cx='36' cy='26' rx='9' ry='13' fill='%239BBF3A' transform='rotate(-20 36 26)'/%3E%3Cpath d='M47 23 Q52 11 58 19' stroke='%236B8F2A' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
+const LOGO_SRC = 'img_Im0.png';
 let currentPage = 'dashboard';
 
 function navigate(page) {
@@ -535,6 +888,8 @@ document.addEventListener('click', e => {
 // ===================== RENDER =====================
 function render() {
   const titles = {
+    employees: 'ניהול עובדות',
+    reports: 'דוחות מכירות',
     dashboard: 'דשבורד',
     orders: 'ניהול הזמנות',
     'new-order': 'הזמנה חדשה',
@@ -555,6 +910,8 @@ function render() {
     case 'products':    content.innerHTML = renderProducts(); break;
     case 'collection':  content.innerHTML = renderCollection(); break;
     case 'work':        content.innerHTML = renderWork(); break;
+    case 'employees':   content.innerHTML = renderEmployees(); break;
+    case 'reports':     content.innerHTML = renderReports(); break;
     default:            content.innerHTML = '<p>עמוד לא נמצא</p>';
   }
   bindEvents();
@@ -562,9 +919,9 @@ function render() {
 
 // ===================== HISTORICAL DATA (Google Sheets) =====================
 const HISTORICAL = {
-  totalOrders: 717,
-  totalRevenue: 427495,
-  period: 'נובמבר–דצמבר 2024',
+  totalOrders: 8349,
+  totalRevenue: 6255802,
+  period: 'נובמבר 2024 – יוני 2026',
   paymentMethods: [
     { name: 'אשראי',    count: 342, color: '#2980B9' },
     { name: "צ'ק",      count: 147, color: '#B89A28' },
@@ -910,7 +1267,317 @@ function printLabel() {
     + '.dl-row{display:flex;gap:8px;padding:3px 0;}'
     + '.dl-key{color:#888;min-width:80px;font-size:12px;}'
     + '.dl-val{font-weight:600;}'
-    + '</style></head><body>' + content + '<scr' + 'ipt>window.print();window.close();</scr' + 'ipt></body></html>');
+    + '</style><script>
+const CUSTOMERS_DB = [
+{id:1,name:"איחוד גור",type:"institutional",phone:"",mobile:"",city:"פתח תקווה",email:"",notes:"",orderCount:517,createdAt:'2024-01-01'},
+  {id:2,name:"דודי שכטר",type:"institutional",phone:"",mobile:"",city:"כפר חבד",email:"",notes:"",orderCount:160,createdAt:'2024-01-01'},
+  {id:3,name:"משה איידלמן",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:125,createdAt:'2024-01-01'},
+  {id:4,name:"נחלת יעקב",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:124,createdAt:'2024-01-01'},
+  {id:5,name:"רחל בוקשפן",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:101,createdAt:'2024-01-01'},
+  {id:6,name:"משה מילר/ברסלב חינוך וחסד",type:"institutional",phone:"058-4153-453",mobile:"058-4153-453",city:"תלפיות",email:"",notes:"",orderCount:71,createdAt:'2024-01-01'},
+  {id:7,name:"בנדיקט",type:"institutional",phone:"054-8458-853",mobile:"054-8458-853",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:69,createdAt:'2024-01-01'},
+  {id:8,name:"אלימלך מלכיאל",type:"institutional",phone:"",mobile:"",city:"מלון ענבל",email:"",notes:"",orderCount:69,createdAt:'2024-01-01'},
+  {id:9,name:"ישכר יאקאב פרטי",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:56,createdAt:'2024-01-01'},
+  {id:10,name:"אשר סולניק",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:47,createdAt:'2024-01-01'},
+  {id:11,name:"יוסי ברסי - נתיב הדעת",type:"institutional",phone:"058-7193-177",mobile:"058-7193-177",city:"מודיעין עילית",email:"",notes:"",orderCount:45,createdAt:'2024-01-01'},
+  {id:12,name:"צביקי קפלן",type:"institutional",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:38,createdAt:'2024-01-01'},
+  {id:13,name:"לאה פולק",type:"institutional",phone:"1732-6645-025",mobile:"1732-6645-025",city:"רמות- ירושלים",email:"",notes:"",orderCount:38,createdAt:'2024-01-01'},
+  {id:14,name:"ישכר יאקאב",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:37,createdAt:'2024-01-01'},
+  {id:15,name:"יענקל אטיק",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:36,createdAt:'2024-01-01'},
+  {id:16,name:"יהושע רייס",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:35,createdAt:'2024-01-01'},
+  {id:17,name:"חיים מאיר דושינסקי",type:"institutional",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:35,createdAt:'2024-01-01'},
+  {id:18,name:"לאבין-לקח השקעות",type:"institutional",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:35,createdAt:'2024-01-01'},
+  {id:19,name:"שמעון שישא",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:34,createdAt:'2024-01-01'},
+  {id:20,name:"זינגר שובו בנים",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:33,createdAt:'2024-01-01'},
+  {id:21,name:"בצלאל טויסיג",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:33,createdAt:'2024-01-01'},
+  {id:22,name:"לקוח",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:31,createdAt:'2024-01-01'},
+  {id:23,name:"ירוחם/אש התורה",type:"institutional",phone:"058-6127-559",mobile:"058-6127-559",city:"ירושלים",email:"",notes:"",orderCount:31,createdAt:'2024-01-01'},
+  {id:24,name:"ממלכת",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:30,createdAt:'2024-01-01'},
+  {id:25,name:"שרון אוחיון",type:"institutional",phone:"",mobile:"",city:"כפר חבד",email:"",notes:"",orderCount:28,createdAt:'2024-01-01'},
+  {id:26,name:"טולידאנו המאור שבתורה",type:"institutional",phone:"",mobile:"",city:"ארנונה",email:"",notes:"",orderCount:27,createdAt:'2024-01-01'},
+  {id:27,name:"שמחי רובינשטיין/פוקוס פרסום והפקות",type:"institutional",phone:"054-4848-517",mobile:"054-4848-517",city:"גבעת זאב",email:"",notes:"",orderCount:26,createdAt:'2024-01-01'},
+  {id:28,name:"מנדי איצקוביץ",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:26,createdAt:'2024-01-01'},
+  {id:29,name:"בית המדרש להלכה בהתיישבות",type:"institutional",phone:"",mobile:"",city:"נווה יעקב- ירושלים",email:"",notes:"",orderCount:25,createdAt:'2024-01-01'},
+  {id:30,name:"ישיבת בית הלל",type:"institutional",phone:"050-4129-486",mobile:"050-4129-486",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:24,createdAt:'2024-01-01'},
+  {id:31,name:"מאטעס דוידוביץ",type:"institutional",phone:"052-7670-643",mobile:"052-7670-643",city:"ירושלים",email:"",notes:"",orderCount:24,createdAt:'2024-01-01'},
+  {id:32,name:"אדרת התורה גווירצמן",type:"institutional",phone:"053-6235-292",mobile:"053-6235-292",city:"יהוד",email:"",notes:"",orderCount:23,createdAt:'2024-01-01'},
+  {id:33,name:"אמונת ציון",type:"institutional",phone:"050-4141-373",mobile:"050-4141-373",city:"חפץ חיים",email:"",notes:"",orderCount:22,createdAt:'2024-01-01'},
+  {id:34,name:"בית עולות",type:"institutional",phone:"053-9603-724",mobile:"053-9603-724",city:"ירושלים",email:"",notes:"",orderCount:22,createdAt:'2024-01-01'},
+  {id:35,name:"משה גולדקנופף",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:21,createdAt:'2024-01-01'},
+  {id:36,name:"רחל אברמובסקי",type:"institutional",phone:"050-4193-331",mobile:"050-4193-331",city:"ירושלים",email:"",notes:"",orderCount:21,createdAt:'2024-01-01'},
+  {id:37,name:"קצנלבויגן",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:20,createdAt:'2024-01-01'},
+  {id:38,name:"פרץ אייזנשטרק",type:"institutional",phone:"052-5454-748",mobile:"052-5454-748",city:"ירושלים",email:"",notes:"",orderCount:20,createdAt:'2024-01-01'},
+  {id:39,name:"פלברבוים- קאזניץ ירושלים",type:"institutional",phone:"053-3139-446",mobile:"053-3139-446",city:"",email:"",notes:"",orderCount:19,createdAt:'2024-01-01'},
+  {id:40,name:"עלי שיח",type:"institutional",phone:"",mobile:"",city:"ביתר",email:"",notes:"",orderCount:19,createdAt:'2024-01-01'},
+  {id:41,name:"שמואל אריה עקשטיין",type:"institutional",phone:"1347-5632-712",mobile:"1347-5632-712",city:"ירושלים",email:"",notes:"",orderCount:19,createdAt:'2024-01-01'},
+  {id:42,name:"נועם",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:43,name:"רבקה פוגל",type:"institutional",phone:"052-7102-294",mobile:"052-7102-294",city:"גבעת שאול- ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:44,name:"ווייל מינהל קהילתי גינות העיר",type:"institutional",phone:"055-6873-160",mobile:"055-6873-160",city:"רעננה",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:45,name:"ישיבת ברכת ישראל",type:"institutional",phone:"",mobile:"",city:"מלון מצודת דוד",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:46,name:"זעבי בעער",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:47,name:"דוב קלוגר",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:48,name:"ושננתם",type:"institutional",phone:"052-7623-388",mobile:"052-7623-388",city:"",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:49,name:"פולק",type:"institutional",phone:"",mobile:"",city:"הר חוצבים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:50,name:"שרי מתנס רוממה",type:"institutional",phone:"052-3264-670",mobile:"052-3264-670",city:"ירושלים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:51,name:"ליינער",type:"institutional",phone:"052-7678-998",mobile:"052-7678-998",city:"ירושלים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:52,name:"שמחה בוואצאפ",type:"institutional",phone:"054-9748-017",mobile:"054-9748-017",city:"ירושלים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:53,name:"מוטי דושינסקי",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:16,createdAt:'2024-01-01'},
+  {id:54,name:"אליהו שטיין",type:"institutional",phone:"055-3316-702",mobile:"055-3316-702",city:"ארמון הנציב",email:"",notes:"",orderCount:16,createdAt:'2024-01-01'},
+  {id:55,name:"מכון למורים",type:"institutional",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:16,createdAt:'2024-01-01'},
+  {id:56,name:"משה שטיין",type:"private",phone:"050-3404-012",mobile:"050-3404-012",city:"איסוף עצמי",email:"",notes:"",orderCount:15,createdAt:'2024-01-01'},
+  {id:57,name:"מנדי זלמן",type:"private",phone:"053-3135-138",mobile:"053-3135-138",city:"רמות- ירושלים",email:"",notes:"",orderCount:15,createdAt:'2024-01-01'},
+  {id:58,name:"שרית גרינבוים/ישיבת דרך השם",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:59,name:"מאיר אייזנברג",type:"private",phone:"053-2700-808",mobile:"053-2700-808",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:60,name:"שלמה בן שעיה",type:"private",phone:"052-7665-991",mobile:"052-7665-991",city:"איסוף עצמי",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:61,name:"אפקט לייבי זילברברג",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:62,name:"דניאל גלייך ארה\"ב",type:"private",phone:"1845-3044-949",mobile:"1845-3044-949",city:"",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:63,name:"מנחם ליפמן",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:64,name:"ברלה בוקשפן יש תקווה",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:65,name:"נשמת בית יעקב",type:"private",phone:"055-3308-594",mobile:"055-3308-594",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:66,name:"אנקת אסיר",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:67,name:"פרץ הירשנבוים",type:"private",phone:"054-9355-376",mobile:"054-9355-376",city:"קרית משה- ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:68,name:"בעער",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:69,name:"סולם",type:"private",phone:"052-7635-113",mobile:"052-7635-113",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:70,name:"יצחק מאיר פשיטיק",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:71,name:"שמעון רכטשפר",type:"private",phone:"",mobile:"",city:"מישור אדומים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:72,name:"יחיאל זיכרמן",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:73,name:"לקוחה",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:74,name:"בנימין זאב כהן",type:"private",phone:"052-2176-081",mobile:"052-2176-081",city:"",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:75,name:"שמעונוביץ",type:"private",phone:"054-8455-160",mobile:"054-8455-160",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:76,name:"ישראל רובינפלד 2",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:77,name:"אהרן ויינברג",type:"private",phone:"053-3160-170",mobile:"053-3160-170",city:"מודיעין עילית",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:78,name:"חיים",type:"private",phone:"053-7172-421",mobile:"053-7172-421",city:"ירושלים",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:79,name:"מ. וואזנר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:80,name:"כהנא",type:"private",phone:"052-7625-330",mobile:"052-7625-330",city:"איסוף עצמי",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:81,name:"שלמה וייס- ויזניץ",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:82,name:"אלישבע גרליץ",type:"private",phone:"050-4147-891",mobile:"050-4147-891",city:"מישור אדומים",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:83,name:"הערשי יוזשעף-ישיבת נחלת יעקב",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:84,name:"ישראל רכניצר - אלכסנדר",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:85,name:"אברימי הולנדר",type:"private",phone:"",mobile:"",city:"אזור יפו",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:86,name:"יידי פרנקל",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:87,name:"שלמה זילברברג",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:88,name:"דבי גין וואטצאפ",type:"private",phone:"1561-4007-796",mobile:"1561-4007-796",city:"פתח תקווה",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:89,name:"מיכל בן שלום",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:90,name:"גרשון פלברבוים",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:91,name:"גוטמן",type:"private",phone:"053-3178-315",mobile:"053-3178-315",city:"רמות- ירושלים",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:92,name:"בית הלל",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:93,name:"יעקב בנין בשביעית",type:"private",phone:"",mobile:"",city:"טלזסטון",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:94,name:"שלום ברדנמרק",type:"private",phone:"",mobile:"",city:"ירושלים רחוק",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:95,name:"משה רפאל לויפער",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:96,name:"אשר יונה כץ/דרך אמת עפולה",type:"private",phone:"054-8467-514",mobile:"054-8467-514",city:"רמות- ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:97,name:"זלמן סורוצקין",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:98,name:"עקיבא אופן",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:99,name:"יצחק",type:"private",phone:"052-8511-701",mobile:"052-8511-701",city:"איסוף עצמי",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:100,name:"ישיבת בית אברהם סלונים",type:"private",phone:"053-3195-479",mobile:"053-3195-479",city:"",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:101,name:"מוישי הירש",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:102,name:"מרגרטן",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:103,name:"יוסי באנדא",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:104,name:"חיה גילקרוב",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:105,name:"ראובן גשייד -רחשי לב",type:"private",phone:"",mobile:"",city:"שכונת בקה",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:106,name:"תמר חסדי יוסף",type:"private",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:107,name:"קופמן",type:"private",phone:"050-4174-595",mobile:"050-4174-595",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:108,name:"לוי יצחק לעווי",type:"private",phone:"055-6759-685",mobile:"055-6759-685",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:109,name:"ניסים גרינבוקס",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:110,name:"ליברמן",type:"private",phone:"058-3215-255",mobile:"058-3215-255",city:"איסוף עצמי",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:111,name:"דונט",type:"private",phone:"052-7693-825",mobile:"052-7693-825",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:112,name:"רפאל מרקוס",type:"private",phone:"054-8444-901",mobile:"054-8444-901",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:113,name:"יוסף חיים",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:114,name:"ברומברג",type:"private",phone:"058-3247-281",mobile:"058-3247-281",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:115,name:"נבנצל",type:"private",phone:"054-8429-544",mobile:"054-8429-544",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:116,name:"יעקב פינקוס - ונתנו ידידים",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:117,name:"שמירת הלשון",type:"private",phone:"",mobile:"",city:"גילה",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:118,name:"לוין",type:"private",phone:"002-5713-136",mobile:"002-5713-136",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:119,name:"וועלוול כהנשטם",type:"private",phone:"1718-3409-364",mobile:"1718-3409-364",city:"בית שמש",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:120,name:"אלעזר מייזליש",type:"private",phone:"",mobile:"",city:"סנהדריה",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:121,name:"איידלמן 2",type:"private",phone:"053-3183-635",mobile:"053-3183-635",city:"קריית מוצקין",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:122,name:"וואזנר מ",type:"private",phone:"44744-7000-000",mobile:"44744-7000-000",city:"",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:123,name:"ווייס",type:"private",phone:"053-3178-285",mobile:"053-3178-285",city:"איסוף עצמי",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:124,name:"ישראל רכניצר אלכסנדר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:125,name:"רוזנבוים",type:"private",phone:"050-4183-603",mobile:"050-4183-603",city:"בני ברק",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:126,name:"משה",type:"private",phone:"058-7165-595",mobile:"058-7165-595",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:127,name:"יוכבד 2",type:"private",phone:"053-5896-898",mobile:"053-5896-898",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:128,name:"בידרמן 3",type:"private",phone:"052-7683-489",mobile:"052-7683-489",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:129,name:"שלום אסט",type:"private",phone:"058-3263-213",mobile:"058-3263-213",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:130,name:"א ארנסטר",type:"private",phone:"050-6950-007",mobile:"050-6950-007",city:"אור יהודה",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:131,name:"חיים ט/מוסדות התורה והחינוך גור ערד",type:"private",phone:"052-7133-346",mobile:"052-7133-346",city:"אשדוד",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:132,name:"רבינוביץ",type:"private",phone:"052-7161-194",mobile:"052-7161-194",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:133,name:"חני רובינשטיין",type:"private",phone:"053-3155-385",mobile:"053-3155-385",city:"איסוף עצמי",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:134,name:"פלא יועץ דאכנער",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:135,name:"ליפשיץ",type:"private",phone:"002-5802-525",mobile:"002-5802-525",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:136,name:"סמינר דרכי רחל",type:"private",phone:"052-7162-386",mobile:"052-7162-386",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:137,name:"הורביץ",type:"private",phone:"055-3225-756",mobile:"055-3225-756",city:"רמת אשכול",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:138,name:"דייטש",type:"private",phone:"058-3285-770",mobile:"058-3285-770",city:"ביתר",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:139,name:"זלטי וולף",type:"private",phone:"054-3373-335",mobile:"054-3373-335",city:"ביתר",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:140,name:"שטרן",type:"private",phone:"050-4129-209",mobile:"050-4129-209",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:141,name:"ש.ל.ד יזמות ובניה",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:142,name:"שלמה פשיטיק גור",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:143,name:"פרידמן",type:"private",phone:"054-8471-529",mobile:"054-8471-529",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:144,name:"יד עזרא ושולמית",type:"private",phone:"054-8593-943",mobile:"054-8593-943",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:145,name:"טנדלר",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:146,name:"הלל מן",type:"private",phone:"050-4129-486",mobile:"050-4129-486",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:147,name:"שרה קאליש",type:"private",phone:"052-7607-765",mobile:"052-7607-765",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:148,name:"רחל ברוק",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:149,name:"יחזקאל",type:"private",phone:"054-8452-264",mobile:"054-8452-264",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:150,name:"מונדרר-תולדות אברהם יצחק",type:"private",phone:"053-3192-466",mobile:"053-3192-466",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:151,name:"רוזנפלד",type:"private",phone:"053-3129-794",mobile:"053-3129-794",city:"איסוף עצמי",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:152,name:"לייבי זילברברג- אפקט",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:153,name:"תמיר- אש התורה",type:"private",phone:"",mobile:"",city:"ימין משה",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:154,name:"אברהם פרל-מכון למורים",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:155,name:"יידי שווארץ ארה\"ב",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:156,name:"אליהו אסייג",type:"private",phone:"",mobile:"",city:"סביון",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:157,name:"רחל נובוסלר",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:158,name:"ברקוביץ",type:"private",phone:"053-3113-052",mobile:"053-3113-052",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:159,name:"אסתי אורנג",type:"private",phone:"052-7628-036",mobile:"052-7628-036",city:"ארנונה",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:160,name:"שווארץ",type:"private",phone:"053-4153-296",mobile:"053-4153-296",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:161,name:"בעער - 2",type:"private",phone:"054-8448-883",mobile:"054-8448-883",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:162,name:"ריבלין",type:"private",phone:"054-8495-657",mobile:"054-8495-657",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:163,name:"מוסדות דארג",type:"private",phone:"052-7169-009",mobile:"052-7169-009",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:164,name:"יואל פאר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:165,name:"פרלמן",type:"private",phone:"052-7698-535",mobile:"052-7698-535",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:166,name:"אלישבע טעמן נדלן",type:"private",phone:"052-7112-267",mobile:"052-7112-267",city:"קדומים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:167,name:"מרקוס",type:"private",phone:"054-8444-901",mobile:"054-8444-901",city:"נווה יעקב- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:168,name:"שרה פרנקל",type:"private",phone:"1917-5131-730",mobile:"1917-5131-730",city:"סנהדריה",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:169,name:"גרוסברד מאיר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:170,name:"זאנוויל ווינברגר",type:"private",phone:"058-4890-139",mobile:"058-4890-139",city:"גבעת זאב",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:171,name:"שמעלקע קיין",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:172,name:"פריזל",type:"private",phone:"052-7639-615",mobile:"052-7639-615",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:173,name:"הולצמן 2",type:"private",phone:"053-3131-797",mobile:"053-3131-797",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:174,name:"חני לונדון",type:"private",phone:"",mobile:"",city:"ביתר",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:175,name:"ברזסקי",type:"private",phone:"1845-9286-568",mobile:"1845-9286-568",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:176,name:"וילינגר",type:"private",phone:"052-7175-235",mobile:"052-7175-235",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:177,name:"דבורה גליק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:178,name:"שלמה לודמיר",type:"private",phone:"052-7125-340",mobile:"052-7125-340",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:179,name:"יחיאל ויספיש",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:180,name:"שטיין",type:"private",phone:"1929-4866-676",mobile:"1929-4866-676",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:181,name:"עקשטיין וילמסבורג",type:"private",phone:"347-5632-712",mobile:"347-5632-712",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:182,name:"פרוכטהנדלר",type:"private",phone:"547833666",mobile:"547833666",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:183,name:"רב להושיע",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:184,name:"אתרוג",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:185,name:"שיינברגר דושינסקי",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:186,name:"דפנה",type:"private",phone:"053-3925-137",mobile:"053-3925-137",city:"רמות- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:187,name:"ראובן פולטשעק",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:188,name:"רוטמן ישראל אשר",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:189,name:"שמחה בונים שכטר",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:190,name:"רחלי- עץ הדעת",type:"private",phone:"",mobile:"",city:"רמת שלמה- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:191,name:"אפקט א. זילברברג",type:"private",phone:"",mobile:"",city:"אשדוד",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:192,name:"וויליגער",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:193,name:"חיה קלמן",type:"private",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:194,name:"משרד JRC",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:195,name:"מירי פולישוק",type:"private",phone:"",mobile:"",city:"נווה יעקב- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:196,name:"יחזקל בוואצאפ",type:"private",phone:"",mobile:"",city:"רמת גן",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:197,name:"שמעון דוד דאווידאוויטש",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:198,name:"כהן",type:"private",phone:"052-7108-528",mobile:"052-7108-528",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:199,name:"שלום ברנדמרק",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:200,name:"יואלי שפילמן",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:201,name:"מוטי",type:"private",phone:"052-4258-842",mobile:"052-4258-842",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:202,name:"גדליה מנדלסון",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:203,name:"קליין",type:"private",phone:"053-4136-854",mobile:"053-4136-854",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:204,name:"קהל יטב לב בני ברק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:205,name:"מוטי גליק",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:206,name:"ר. בן דוד",type:"private",phone:"054-8439-110",mobile:"054-8439-110",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:207,name:"נתנאל",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:208,name:"פיינשטיין",type:"private",phone:"055-5210-280",mobile:"055-5210-280",city:"סנהדריה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:209,name:"גוטליב",type:"private",phone:"050-4131-039",mobile:"050-4131-039",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:210,name:"יצחק רוזנפלד פינסק קרלין",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:211,name:"שמואל הר זהב",type:"private",phone:"053-3187-870",mobile:"053-3187-870",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:212,name:"מרדכי רובין- ביאלא",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:213,name:"מגדל אור",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:214,name:"פרוש",type:"private",phone:"052-7654-770",mobile:"052-7654-770",city:"רמת שלמה- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:215,name:"ישראל מונטג/פני מנחם בית שמש",type:"private",phone:"053-3199-910",mobile:"053-3199-910",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:216,name:"סמט",type:"private",phone:"050-4156-584",mobile:"050-4156-584",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:217,name:"זלמן פרידמן",type:"private",phone:"053-4713-528",mobile:"053-4713-528",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:218,name:"חיים מאיר דושינסקיא",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:219,name:"יעקב",type:"private",phone:"058-3208-131",mobile:"058-3208-131",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:220,name:"ליבוביץ משה לייב בעזרי",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:221,name:"יעקבזון- תעצומות",type:"private",phone:"052-7669-701",mobile:"052-7669-701",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:222,name:"שרה",type:"private",phone:"055-2644-433",mobile:"055-2644-433",city:"הדסה עין כרם",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:223,name:"גנון",type:"private",phone:"",mobile:"",city:"הר חומה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:224,name:"שרה שליידר",type:"private",phone:"",mobile:"",city:"גבעת המבתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:225,name:"גוטפרב",type:"private",phone:"054-8430-868",mobile:"054-8430-868",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:226,name:"מלכי רייכר",type:"private",phone:"",mobile:"",city:"מלון ירמיהו- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:227,name:"שיינפלד קופת שמואל הנביא",type:"private",phone:"052-7135-111",mobile:"052-7135-111",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:228,name:"רחל טייב",type:"private",phone:"054-8359-010",mobile:"054-8359-010",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:229,name:"מרים ריינשטיין",type:"private",phone:"052-6071-073",mobile:"052-6071-073",city:"ירושלים רחוק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:230,name:"פרקל",type:"private",phone:"054-4517-501",mobile:"054-4517-501",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:231,name:"פנחס טאומן",type:"private",phone:"058-3979-500",mobile:"058-3979-500",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:232,name:"ספרין",type:"private",phone:"052-7137-998",mobile:"052-7137-998",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:233,name:"רות מילר",type:"private",phone:"",mobile:"",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:234,name:"ישראל רוזנפלד",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:235,name:"מגדיל ישועות",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:236,name:"שני זמל",type:"private",phone:"054-7290-010",mobile:"054-7290-010",city:"מודיעין",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:237,name:"לייטנר",type:"private",phone:"058-7870-958",mobile:"058-7870-958",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:238,name:"פרץ",type:"private",phone:"052-7142-543",mobile:"052-7142-543",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:239,name:"דודי קנופלר",type:"private",phone:"",mobile:"",city:"גוש עציון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:240,name:"רחל רוזנפלד",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:241,name:"מאיר שטיין",type:"private",phone:"052-5458-777",mobile:"052-5458-777",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:242,name:"דודי שוורץ טהרת המשפחה",type:"private",phone:"058-6272-852",mobile:"058-6272-852",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:243,name:"אלי שיף",type:"private",phone:"054-4446-070",mobile:"054-4446-070",city:"שכונת בקה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:244,name:"אלטוסקי",type:"private",phone:"002-5618-558",mobile:"002-5618-558",city:"קרית גת",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:245,name:"אלישבע",type:"private",phone:"058-3233-040",mobile:"058-3233-040",city:"ימין משה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:246,name:"עמרם גרינוולד 2",type:"private",phone:"053-3111-695",mobile:"053-3111-695",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:247,name:"אברומובסקי",type:"private",phone:"050-4193-331",mobile:"050-4193-331",city:"חולון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:248,name:"מזכירות בית עולות",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:249,name:"אייכן",type:"private",phone:"052-5223-549",mobile:"052-5223-549",city:"תל ציון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:250,name:"משה אריה הרשקוביץ",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:251,name:"ריקי שפירא",type:"private",phone:"054-4544-173",mobile:"054-4544-173",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:252,name:"רוחי אילוביץ בוואצאפ",type:"private",phone:"054-3103-448",mobile:"054-3103-448",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:253,name:"הרצל",type:"private",phone:"053-3109-748",mobile:"053-3109-748",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:254,name:"אהרן מרדר",type:"private",phone:"054-8592-558",mobile:"054-8592-558",city:"מושה עמינדב",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:255,name:"שלאס יעקב אשר",type:"private",phone:"050-4123-020",mobile:"050-4123-020",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:256,name:"יעקב שפירא",type:"private",phone:"055-6763-736",mobile:"055-6763-736",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:257,name:"יהושע פרקוביץ",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:258,name:"ריווי בארד",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:259,name:"מינהל קהילתי מעלה רמות",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:260,name:"לבנה  הרוש",type:"private",phone:"",mobile:"",city:"קרית משה- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:261,name:"נחום קורפו",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:262,name:"בית לפליטות",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:263,name:"שידלובסקי",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:264,name:"יהודית זידלה",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:265,name:"מוסדות זוויהל",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:266,name:"בנימין רוטנברג",type:"private",phone:"",mobile:"",city:"קטמון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:267,name:"אפרים שטרן ארה\"ב",type:"private",phone:"",mobile:"",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:268,name:"תורה ותפילה",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:269,name:"חיה לוין",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:270,name:"נחמן ישורון",type:"private",phone:"",mobile:"",city:"רמת שלמה- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:271,name:"משה גליס",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:272,name:"מיכל",type:"private",phone:"054-2548-420",mobile:"054-2548-420",city:"הר חוצבים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:273,name:"נתן",type:"private",phone:"054-3775-779",mobile:"054-3775-779",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:274,name:"יהושע ווינברגר מוסדות צאנז",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:275,name:"ישראל",type:"private",phone:"054-8413-595",mobile:"054-8413-595",city:"ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:276,name:"לוי",type:"private",phone:"1917-6817-005",mobile:"1917-6817-005",city:"איסוף עצמי",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:277,name:"ידידיה מוסדות דאראג",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:278,name:"איטי",type:"private",phone:"",mobile:"",city:"קוממיות",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:279,name:"בנצי וויינטרויב מפיק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:280,name:"לבנה הרוש- תב\"ע קפיטל",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:281,name:"יצחק פרידמן",type:"private",phone:"347-6783-254",mobile:"347-6783-254",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:282,name:"רובין",type:"private",phone:"058-3296-929",mobile:"058-3296-929",city:"ירושלים רחוק",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:283,name:"חיים לוברבום",type:"private",phone:"052-7681-995",mobile:"052-7681-995",city:"ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:284,name:"רבקי פרוש/לימון מילה של איכות",type:"private",phone:"073-7693-799",mobile:"073-7693-799",city:"בית שמש",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:285,name:"חיה הורביץ",type:"private",phone:"054-8419-990",mobile:"054-8419-990",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:286,name:"מתנה פופקא",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:287,name:"נחמה פיק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:288,name:"סנקביץ ישראל",type:"private",phone:"050-5988-178",mobile:"050-5988-178",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:289,name:"אפרים לודמיר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:290,name:"איצקוביץ בנציון",type:"private",phone:"054-8461-075",mobile:"054-8461-075",city:"הדסה עין כרם",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:291,name:"רבינוביץ חיים",type:"private",phone:"052-5654-000",mobile:"052-5654-000",city:"ביתר",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:292,name:"גני ילדים בית יעקב",type:"private",phone:"050-4150-145",mobile:"050-4150-145",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:293,name:"ווייס הרב",type:"private",phone:"002-5387-410",mobile:"002-5387-410",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:294,name:"חנוך אייזנברג",type:"private",phone:"",mobile:"",city:"מלון דן",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:295,name:"איידלמן",type:"private",phone:"058-3291-341",mobile:"058-3291-341",city:"קריית ים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:296,name:"ישראל סגל",type:"private",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:297,name:"שאול פלדמן",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:298,name:"צינוירט",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:299,name:"רוזמן",type:"private",phone:"052-7158-412",mobile:"052-7158-412",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:300,name:"דודק",type:"private",phone:"053-3108-110",mobile:"053-3108-110",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'}
+];
+const EMPLOYEES_DB = [
+{id:1,name:"אייזיק",phone:'',role:'מזכירה'},
+  {id:2,name:"חיה שורי",phone:'',role:'מזכירה'},
+  {id:3,name:"יוכבד",phone:'',role:'מזכירה'},
+  {id:4,name:"שרה הירש",phone:'',role:'מזכירה'}
+];
+</script>
+</head><body>' + content + '<scr' + 'ipt>window.print();window.close();</scr' + 'ipt></body></html>');
 }
 
 // ===================== ORDER FORM =====================
@@ -940,14 +1607,14 @@ function renderOrderForm(editId) {
             <option value="institutional" ${v('customerType')==='institutional'?'selected':''}>מוסדי</option>
           </select>
         </div>
-
-                <div class="field"><label>מזכירה שמכרה</label>
+        <div class="field"><label>מזכירה שמכרה</label>
           <select name="employee">
             <option value="">— בחר —</option>
-            ${(DB.employees||[]).map(e => `<option value="${escHtml(e.name)}">${escHtml(e.name)}</option>`).join('')}
+            ${(DB.employees||[]).map(e => `<option value="${escHtml(e.name)}" ${v('employee')===e.name?'selected':''}>${escHtml(e.name)}</option>`).join('')}
           </select>
         </div>
-<div class="section-title">🍎 פרטי המוצר</div>
+
+        <div class="section-title">🍎 פרטי המוצר</div>
         <div class="field"><label>דגם / מוצר *</label>
           <select name="productId" onchange="updateProductPrice(this)" required>
             <option value="">— בחר מוצר —</option>
@@ -1359,7 +2026,317 @@ function printReceipt(id) {
   ].map(([k,v]) => '<div class="row' + (k==='סה"כ'?' total':'') + '"><span>' + k + ':</span><span>' + v + '</span></div>').join('');
   win.document.write('<html dir="rtl"><head><meta charset="UTF-8"><title>קבלה ' + o.orderNum + '</title>'
     + '<style>body{font-family:Arial;padding:40px;max-width:400px;margin:0 auto;} h2{color:#3E5C1A;} .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;} .total{font-size:20px;font-weight:800;margin-top:16px;color:#3E5C1A;}</style>'
-    + '</head><body>'
+    + '<script>
+const CUSTOMERS_DB = [
+{id:1,name:"איחוד גור",type:"institutional",phone:"",mobile:"",city:"פתח תקווה",email:"",notes:"",orderCount:517,createdAt:'2024-01-01'},
+  {id:2,name:"דודי שכטר",type:"institutional",phone:"",mobile:"",city:"כפר חבד",email:"",notes:"",orderCount:160,createdAt:'2024-01-01'},
+  {id:3,name:"משה איידלמן",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:125,createdAt:'2024-01-01'},
+  {id:4,name:"נחלת יעקב",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:124,createdAt:'2024-01-01'},
+  {id:5,name:"רחל בוקשפן",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:101,createdAt:'2024-01-01'},
+  {id:6,name:"משה מילר/ברסלב חינוך וחסד",type:"institutional",phone:"058-4153-453",mobile:"058-4153-453",city:"תלפיות",email:"",notes:"",orderCount:71,createdAt:'2024-01-01'},
+  {id:7,name:"בנדיקט",type:"institutional",phone:"054-8458-853",mobile:"054-8458-853",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:69,createdAt:'2024-01-01'},
+  {id:8,name:"אלימלך מלכיאל",type:"institutional",phone:"",mobile:"",city:"מלון ענבל",email:"",notes:"",orderCount:69,createdAt:'2024-01-01'},
+  {id:9,name:"ישכר יאקאב פרטי",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:56,createdAt:'2024-01-01'},
+  {id:10,name:"אשר סולניק",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:47,createdAt:'2024-01-01'},
+  {id:11,name:"יוסי ברסי - נתיב הדעת",type:"institutional",phone:"058-7193-177",mobile:"058-7193-177",city:"מודיעין עילית",email:"",notes:"",orderCount:45,createdAt:'2024-01-01'},
+  {id:12,name:"צביקי קפלן",type:"institutional",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:38,createdAt:'2024-01-01'},
+  {id:13,name:"לאה פולק",type:"institutional",phone:"1732-6645-025",mobile:"1732-6645-025",city:"רמות- ירושלים",email:"",notes:"",orderCount:38,createdAt:'2024-01-01'},
+  {id:14,name:"ישכר יאקאב",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:37,createdAt:'2024-01-01'},
+  {id:15,name:"יענקל אטיק",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:36,createdAt:'2024-01-01'},
+  {id:16,name:"יהושע רייס",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:35,createdAt:'2024-01-01'},
+  {id:17,name:"חיים מאיר דושינסקי",type:"institutional",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:35,createdAt:'2024-01-01'},
+  {id:18,name:"לאבין-לקח השקעות",type:"institutional",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:35,createdAt:'2024-01-01'},
+  {id:19,name:"שמעון שישא",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:34,createdAt:'2024-01-01'},
+  {id:20,name:"זינגר שובו בנים",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:33,createdAt:'2024-01-01'},
+  {id:21,name:"בצלאל טויסיג",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:33,createdAt:'2024-01-01'},
+  {id:22,name:"לקוח",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:31,createdAt:'2024-01-01'},
+  {id:23,name:"ירוחם/אש התורה",type:"institutional",phone:"058-6127-559",mobile:"058-6127-559",city:"ירושלים",email:"",notes:"",orderCount:31,createdAt:'2024-01-01'},
+  {id:24,name:"ממלכת",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:30,createdAt:'2024-01-01'},
+  {id:25,name:"שרון אוחיון",type:"institutional",phone:"",mobile:"",city:"כפר חבד",email:"",notes:"",orderCount:28,createdAt:'2024-01-01'},
+  {id:26,name:"טולידאנו המאור שבתורה",type:"institutional",phone:"",mobile:"",city:"ארנונה",email:"",notes:"",orderCount:27,createdAt:'2024-01-01'},
+  {id:27,name:"שמחי רובינשטיין/פוקוס פרסום והפקות",type:"institutional",phone:"054-4848-517",mobile:"054-4848-517",city:"גבעת זאב",email:"",notes:"",orderCount:26,createdAt:'2024-01-01'},
+  {id:28,name:"מנדי איצקוביץ",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:26,createdAt:'2024-01-01'},
+  {id:29,name:"בית המדרש להלכה בהתיישבות",type:"institutional",phone:"",mobile:"",city:"נווה יעקב- ירושלים",email:"",notes:"",orderCount:25,createdAt:'2024-01-01'},
+  {id:30,name:"ישיבת בית הלל",type:"institutional",phone:"050-4129-486",mobile:"050-4129-486",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:24,createdAt:'2024-01-01'},
+  {id:31,name:"מאטעס דוידוביץ",type:"institutional",phone:"052-7670-643",mobile:"052-7670-643",city:"ירושלים",email:"",notes:"",orderCount:24,createdAt:'2024-01-01'},
+  {id:32,name:"אדרת התורה גווירצמן",type:"institutional",phone:"053-6235-292",mobile:"053-6235-292",city:"יהוד",email:"",notes:"",orderCount:23,createdAt:'2024-01-01'},
+  {id:33,name:"אמונת ציון",type:"institutional",phone:"050-4141-373",mobile:"050-4141-373",city:"חפץ חיים",email:"",notes:"",orderCount:22,createdAt:'2024-01-01'},
+  {id:34,name:"בית עולות",type:"institutional",phone:"053-9603-724",mobile:"053-9603-724",city:"ירושלים",email:"",notes:"",orderCount:22,createdAt:'2024-01-01'},
+  {id:35,name:"משה גולדקנופף",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:21,createdAt:'2024-01-01'},
+  {id:36,name:"רחל אברמובסקי",type:"institutional",phone:"050-4193-331",mobile:"050-4193-331",city:"ירושלים",email:"",notes:"",orderCount:21,createdAt:'2024-01-01'},
+  {id:37,name:"קצנלבויגן",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:20,createdAt:'2024-01-01'},
+  {id:38,name:"פרץ אייזנשטרק",type:"institutional",phone:"052-5454-748",mobile:"052-5454-748",city:"ירושלים",email:"",notes:"",orderCount:20,createdAt:'2024-01-01'},
+  {id:39,name:"פלברבוים- קאזניץ ירושלים",type:"institutional",phone:"053-3139-446",mobile:"053-3139-446",city:"",email:"",notes:"",orderCount:19,createdAt:'2024-01-01'},
+  {id:40,name:"עלי שיח",type:"institutional",phone:"",mobile:"",city:"ביתר",email:"",notes:"",orderCount:19,createdAt:'2024-01-01'},
+  {id:41,name:"שמואל אריה עקשטיין",type:"institutional",phone:"1347-5632-712",mobile:"1347-5632-712",city:"ירושלים",email:"",notes:"",orderCount:19,createdAt:'2024-01-01'},
+  {id:42,name:"נועם",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:43,name:"רבקה פוגל",type:"institutional",phone:"052-7102-294",mobile:"052-7102-294",city:"גבעת שאול- ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:44,name:"ווייל מינהל קהילתי גינות העיר",type:"institutional",phone:"055-6873-160",mobile:"055-6873-160",city:"רעננה",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:45,name:"ישיבת ברכת ישראל",type:"institutional",phone:"",mobile:"",city:"מלון מצודת דוד",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:46,name:"זעבי בעער",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:47,name:"דוב קלוגר",type:"institutional",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:18,createdAt:'2024-01-01'},
+  {id:48,name:"ושננתם",type:"institutional",phone:"052-7623-388",mobile:"052-7623-388",city:"",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:49,name:"פולק",type:"institutional",phone:"",mobile:"",city:"הר חוצבים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:50,name:"שרי מתנס רוממה",type:"institutional",phone:"052-3264-670",mobile:"052-3264-670",city:"ירושלים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:51,name:"ליינער",type:"institutional",phone:"052-7678-998",mobile:"052-7678-998",city:"ירושלים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:52,name:"שמחה בוואצאפ",type:"institutional",phone:"054-9748-017",mobile:"054-9748-017",city:"ירושלים",email:"",notes:"",orderCount:17,createdAt:'2024-01-01'},
+  {id:53,name:"מוטי דושינסקי",type:"institutional",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:16,createdAt:'2024-01-01'},
+  {id:54,name:"אליהו שטיין",type:"institutional",phone:"055-3316-702",mobile:"055-3316-702",city:"ארמון הנציב",email:"",notes:"",orderCount:16,createdAt:'2024-01-01'},
+  {id:55,name:"מכון למורים",type:"institutional",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:16,createdAt:'2024-01-01'},
+  {id:56,name:"משה שטיין",type:"private",phone:"050-3404-012",mobile:"050-3404-012",city:"איסוף עצמי",email:"",notes:"",orderCount:15,createdAt:'2024-01-01'},
+  {id:57,name:"מנדי זלמן",type:"private",phone:"053-3135-138",mobile:"053-3135-138",city:"רמות- ירושלים",email:"",notes:"",orderCount:15,createdAt:'2024-01-01'},
+  {id:58,name:"שרית גרינבוים/ישיבת דרך השם",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:59,name:"מאיר אייזנברג",type:"private",phone:"053-2700-808",mobile:"053-2700-808",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:60,name:"שלמה בן שעיה",type:"private",phone:"052-7665-991",mobile:"052-7665-991",city:"איסוף עצמי",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:61,name:"אפקט לייבי זילברברג",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:62,name:"דניאל גלייך ארה\"ב",type:"private",phone:"1845-3044-949",mobile:"1845-3044-949",city:"",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:63,name:"מנחם ליפמן",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:64,name:"ברלה בוקשפן יש תקווה",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:65,name:"נשמת בית יעקב",type:"private",phone:"055-3308-594",mobile:"055-3308-594",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:66,name:"אנקת אסיר",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:14,createdAt:'2024-01-01'},
+  {id:67,name:"פרץ הירשנבוים",type:"private",phone:"054-9355-376",mobile:"054-9355-376",city:"קרית משה- ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:68,name:"בעער",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:69,name:"סולם",type:"private",phone:"052-7635-113",mobile:"052-7635-113",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:70,name:"יצחק מאיר פשיטיק",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:71,name:"שמעון רכטשפר",type:"private",phone:"",mobile:"",city:"מישור אדומים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:72,name:"יחיאל זיכרמן",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:73,name:"לקוחה",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:74,name:"בנימין זאב כהן",type:"private",phone:"052-2176-081",mobile:"052-2176-081",city:"",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:75,name:"שמעונוביץ",type:"private",phone:"054-8455-160",mobile:"054-8455-160",city:"ירושלים",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:76,name:"ישראל רובינפלד 2",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:13,createdAt:'2024-01-01'},
+  {id:77,name:"אהרן ויינברג",type:"private",phone:"053-3160-170",mobile:"053-3160-170",city:"מודיעין עילית",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:78,name:"חיים",type:"private",phone:"053-7172-421",mobile:"053-7172-421",city:"ירושלים",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:79,name:"מ. וואזנר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:80,name:"כהנא",type:"private",phone:"052-7625-330",mobile:"052-7625-330",city:"איסוף עצמי",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:81,name:"שלמה וייס- ויזניץ",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:82,name:"אלישבע גרליץ",type:"private",phone:"050-4147-891",mobile:"050-4147-891",city:"מישור אדומים",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:83,name:"הערשי יוזשעף-ישיבת נחלת יעקב",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:84,name:"ישראל רכניצר - אלכסנדר",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:85,name:"אברימי הולנדר",type:"private",phone:"",mobile:"",city:"אזור יפו",email:"",notes:"",orderCount:12,createdAt:'2024-01-01'},
+  {id:86,name:"יידי פרנקל",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:87,name:"שלמה זילברברג",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:88,name:"דבי גין וואטצאפ",type:"private",phone:"1561-4007-796",mobile:"1561-4007-796",city:"פתח תקווה",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:89,name:"מיכל בן שלום",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:90,name:"גרשון פלברבוים",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:91,name:"גוטמן",type:"private",phone:"053-3178-315",mobile:"053-3178-315",city:"רמות- ירושלים",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:92,name:"בית הלל",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:93,name:"יעקב בנין בשביעית",type:"private",phone:"",mobile:"",city:"טלזסטון",email:"",notes:"",orderCount:11,createdAt:'2024-01-01'},
+  {id:94,name:"שלום ברדנמרק",type:"private",phone:"",mobile:"",city:"ירושלים רחוק",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:95,name:"משה רפאל לויפער",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:96,name:"אשר יונה כץ/דרך אמת עפולה",type:"private",phone:"054-8467-514",mobile:"054-8467-514",city:"רמות- ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:97,name:"זלמן סורוצקין",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:98,name:"עקיבא אופן",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:99,name:"יצחק",type:"private",phone:"052-8511-701",mobile:"052-8511-701",city:"איסוף עצמי",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:100,name:"ישיבת בית אברהם סלונים",type:"private",phone:"053-3195-479",mobile:"053-3195-479",city:"",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:101,name:"מוישי הירש",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:102,name:"מרגרטן",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:103,name:"יוסי באנדא",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:104,name:"חיה גילקרוב",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:105,name:"ראובן גשייד -רחשי לב",type:"private",phone:"",mobile:"",city:"שכונת בקה",email:"",notes:"",orderCount:10,createdAt:'2024-01-01'},
+  {id:106,name:"תמר חסדי יוסף",type:"private",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:107,name:"קופמן",type:"private",phone:"050-4174-595",mobile:"050-4174-595",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:108,name:"לוי יצחק לעווי",type:"private",phone:"055-6759-685",mobile:"055-6759-685",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:109,name:"ניסים גרינבוקס",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:110,name:"ליברמן",type:"private",phone:"058-3215-255",mobile:"058-3215-255",city:"איסוף עצמי",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:111,name:"דונט",type:"private",phone:"052-7693-825",mobile:"052-7693-825",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:112,name:"רפאל מרקוס",type:"private",phone:"054-8444-901",mobile:"054-8444-901",city:"ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:113,name:"יוסף חיים",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:114,name:"ברומברג",type:"private",phone:"058-3247-281",mobile:"058-3247-281",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:115,name:"נבנצל",type:"private",phone:"054-8429-544",mobile:"054-8429-544",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:116,name:"יעקב פינקוס - ונתנו ידידים",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:117,name:"שמירת הלשון",type:"private",phone:"",mobile:"",city:"גילה",email:"",notes:"",orderCount:9,createdAt:'2024-01-01'},
+  {id:118,name:"לוין",type:"private",phone:"002-5713-136",mobile:"002-5713-136",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:119,name:"וועלוול כהנשטם",type:"private",phone:"1718-3409-364",mobile:"1718-3409-364",city:"בית שמש",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:120,name:"אלעזר מייזליש",type:"private",phone:"",mobile:"",city:"סנהדריה",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:121,name:"איידלמן 2",type:"private",phone:"053-3183-635",mobile:"053-3183-635",city:"קריית מוצקין",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:122,name:"וואזנר מ",type:"private",phone:"44744-7000-000",mobile:"44744-7000-000",city:"",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:123,name:"ווייס",type:"private",phone:"053-3178-285",mobile:"053-3178-285",city:"איסוף עצמי",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:124,name:"ישראל רכניצר אלכסנדר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:125,name:"רוזנבוים",type:"private",phone:"050-4183-603",mobile:"050-4183-603",city:"בני ברק",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:126,name:"משה",type:"private",phone:"058-7165-595",mobile:"058-7165-595",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:127,name:"יוכבד 2",type:"private",phone:"053-5896-898",mobile:"053-5896-898",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:128,name:"בידרמן 3",type:"private",phone:"052-7683-489",mobile:"052-7683-489",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:129,name:"שלום אסט",type:"private",phone:"058-3263-213",mobile:"058-3263-213",city:"ירושלים",email:"",notes:"",orderCount:8,createdAt:'2024-01-01'},
+  {id:130,name:"א ארנסטר",type:"private",phone:"050-6950-007",mobile:"050-6950-007",city:"אור יהודה",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:131,name:"חיים ט/מוסדות התורה והחינוך גור ערד",type:"private",phone:"052-7133-346",mobile:"052-7133-346",city:"אשדוד",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:132,name:"רבינוביץ",type:"private",phone:"052-7161-194",mobile:"052-7161-194",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:133,name:"חני רובינשטיין",type:"private",phone:"053-3155-385",mobile:"053-3155-385",city:"איסוף עצמי",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:134,name:"פלא יועץ דאכנער",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:135,name:"ליפשיץ",type:"private",phone:"002-5802-525",mobile:"002-5802-525",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:136,name:"סמינר דרכי רחל",type:"private",phone:"052-7162-386",mobile:"052-7162-386",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:137,name:"הורביץ",type:"private",phone:"055-3225-756",mobile:"055-3225-756",city:"רמת אשכול",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:138,name:"דייטש",type:"private",phone:"058-3285-770",mobile:"058-3285-770",city:"ביתר",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:139,name:"זלטי וולף",type:"private",phone:"054-3373-335",mobile:"054-3373-335",city:"ביתר",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:140,name:"שטרן",type:"private",phone:"050-4129-209",mobile:"050-4129-209",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:141,name:"ש.ל.ד יזמות ובניה",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:142,name:"שלמה פשיטיק גור",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:143,name:"פרידמן",type:"private",phone:"054-8471-529",mobile:"054-8471-529",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:144,name:"יד עזרא ושולמית",type:"private",phone:"054-8593-943",mobile:"054-8593-943",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:145,name:"טנדלר",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:146,name:"הלל מן",type:"private",phone:"050-4129-486",mobile:"050-4129-486",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:147,name:"שרה קאליש",type:"private",phone:"052-7607-765",mobile:"052-7607-765",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:148,name:"רחל ברוק",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:149,name:"יחזקאל",type:"private",phone:"054-8452-264",mobile:"054-8452-264",city:"",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:150,name:"מונדרר-תולדות אברהם יצחק",type:"private",phone:"053-3192-466",mobile:"053-3192-466",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:151,name:"רוזנפלד",type:"private",phone:"053-3129-794",mobile:"053-3129-794",city:"איסוף עצמי",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:152,name:"לייבי זילברברג- אפקט",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:153,name:"תמיר- אש התורה",type:"private",phone:"",mobile:"",city:"ימין משה",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:154,name:"אברהם פרל-מכון למורים",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:155,name:"יידי שווארץ ארה\"ב",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:7,createdAt:'2024-01-01'},
+  {id:156,name:"אליהו אסייג",type:"private",phone:"",mobile:"",city:"סביון",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:157,name:"רחל נובוסלר",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:158,name:"ברקוביץ",type:"private",phone:"053-3113-052",mobile:"053-3113-052",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:159,name:"אסתי אורנג",type:"private",phone:"052-7628-036",mobile:"052-7628-036",city:"ארנונה",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:160,name:"שווארץ",type:"private",phone:"053-4153-296",mobile:"053-4153-296",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:161,name:"בעער - 2",type:"private",phone:"054-8448-883",mobile:"054-8448-883",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:162,name:"ריבלין",type:"private",phone:"054-8495-657",mobile:"054-8495-657",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:163,name:"מוסדות דארג",type:"private",phone:"052-7169-009",mobile:"052-7169-009",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:164,name:"יואל פאר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:165,name:"פרלמן",type:"private",phone:"052-7698-535",mobile:"052-7698-535",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:166,name:"אלישבע טעמן נדלן",type:"private",phone:"052-7112-267",mobile:"052-7112-267",city:"קדומים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:167,name:"מרקוס",type:"private",phone:"054-8444-901",mobile:"054-8444-901",city:"נווה יעקב- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:168,name:"שרה פרנקל",type:"private",phone:"1917-5131-730",mobile:"1917-5131-730",city:"סנהדריה",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:169,name:"גרוסברד מאיר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:170,name:"זאנוויל ווינברגר",type:"private",phone:"058-4890-139",mobile:"058-4890-139",city:"גבעת זאב",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:171,name:"שמעלקע קיין",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:172,name:"פריזל",type:"private",phone:"052-7639-615",mobile:"052-7639-615",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:173,name:"הולצמן 2",type:"private",phone:"053-3131-797",mobile:"053-3131-797",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:174,name:"חני לונדון",type:"private",phone:"",mobile:"",city:"ביתר",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:175,name:"ברזסקי",type:"private",phone:"1845-9286-568",mobile:"1845-9286-568",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:176,name:"וילינגר",type:"private",phone:"052-7175-235",mobile:"052-7175-235",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:177,name:"דבורה גליק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:178,name:"שלמה לודמיר",type:"private",phone:"052-7125-340",mobile:"052-7125-340",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:179,name:"יחיאל ויספיש",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:180,name:"שטיין",type:"private",phone:"1929-4866-676",mobile:"1929-4866-676",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:181,name:"עקשטיין וילמסבורג",type:"private",phone:"347-5632-712",mobile:"347-5632-712",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:182,name:"פרוכטהנדלר",type:"private",phone:"547833666",mobile:"547833666",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:183,name:"רב להושיע",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:184,name:"אתרוג",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:185,name:"שיינברגר דושינסקי",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:186,name:"דפנה",type:"private",phone:"053-3925-137",mobile:"053-3925-137",city:"רמות- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:187,name:"ראובן פולטשעק",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:188,name:"רוטמן ישראל אשר",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:189,name:"שמחה בונים שכטר",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:190,name:"רחלי- עץ הדעת",type:"private",phone:"",mobile:"",city:"רמת שלמה- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:191,name:"אפקט א. זילברברג",type:"private",phone:"",mobile:"",city:"אשדוד",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:192,name:"וויליגער",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:193,name:"חיה קלמן",type:"private",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:194,name:"משרד JRC",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:195,name:"מירי פולישוק",type:"private",phone:"",mobile:"",city:"נווה יעקב- ירושלים",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:196,name:"יחזקל בוואצאפ",type:"private",phone:"",mobile:"",city:"רמת גן",email:"",notes:"",orderCount:6,createdAt:'2024-01-01'},
+  {id:197,name:"שמעון דוד דאווידאוויטש",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:198,name:"כהן",type:"private",phone:"052-7108-528",mobile:"052-7108-528",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:199,name:"שלום ברנדמרק",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:200,name:"יואלי שפילמן",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:201,name:"מוטי",type:"private",phone:"052-4258-842",mobile:"052-4258-842",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:202,name:"גדליה מנדלסון",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:203,name:"קליין",type:"private",phone:"053-4136-854",mobile:"053-4136-854",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:204,name:"קהל יטב לב בני ברק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:205,name:"מוטי גליק",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:206,name:"ר. בן דוד",type:"private",phone:"054-8439-110",mobile:"054-8439-110",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:207,name:"נתנאל",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:208,name:"פיינשטיין",type:"private",phone:"055-5210-280",mobile:"055-5210-280",city:"סנהדריה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:209,name:"גוטליב",type:"private",phone:"050-4131-039",mobile:"050-4131-039",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:210,name:"יצחק רוזנפלד פינסק קרלין",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:211,name:"שמואל הר זהב",type:"private",phone:"053-3187-870",mobile:"053-3187-870",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:212,name:"מרדכי רובין- ביאלא",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:213,name:"מגדל אור",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:214,name:"פרוש",type:"private",phone:"052-7654-770",mobile:"052-7654-770",city:"רמת שלמה- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:215,name:"ישראל מונטג/פני מנחם בית שמש",type:"private",phone:"053-3199-910",mobile:"053-3199-910",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:216,name:"סמט",type:"private",phone:"050-4156-584",mobile:"050-4156-584",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:217,name:"זלמן פרידמן",type:"private",phone:"053-4713-528",mobile:"053-4713-528",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:218,name:"חיים מאיר דושינסקיא",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:219,name:"יעקב",type:"private",phone:"058-3208-131",mobile:"058-3208-131",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:220,name:"ליבוביץ משה לייב בעזרי",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:221,name:"יעקבזון- תעצומות",type:"private",phone:"052-7669-701",mobile:"052-7669-701",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:222,name:"שרה",type:"private",phone:"055-2644-433",mobile:"055-2644-433",city:"הדסה עין כרם",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:223,name:"גנון",type:"private",phone:"",mobile:"",city:"הר חומה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:224,name:"שרה שליידר",type:"private",phone:"",mobile:"",city:"גבעת המבתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:225,name:"גוטפרב",type:"private",phone:"054-8430-868",mobile:"054-8430-868",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:226,name:"מלכי רייכר",type:"private",phone:"",mobile:"",city:"מלון ירמיהו- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:227,name:"שיינפלד קופת שמואל הנביא",type:"private",phone:"052-7135-111",mobile:"052-7135-111",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:228,name:"רחל טייב",type:"private",phone:"054-8359-010",mobile:"054-8359-010",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:229,name:"מרים ריינשטיין",type:"private",phone:"052-6071-073",mobile:"052-6071-073",city:"ירושלים רחוק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:230,name:"פרקל",type:"private",phone:"054-4517-501",mobile:"054-4517-501",city:"ביתר",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:231,name:"פנחס טאומן",type:"private",phone:"058-3979-500",mobile:"058-3979-500",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:232,name:"ספרין",type:"private",phone:"052-7137-998",mobile:"052-7137-998",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:233,name:"רות מילר",type:"private",phone:"",mobile:"",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:234,name:"ישראל רוזנפלד",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:235,name:"מגדיל ישועות",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:236,name:"שני זמל",type:"private",phone:"054-7290-010",mobile:"054-7290-010",city:"מודיעין",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:237,name:"לייטנר",type:"private",phone:"058-7870-958",mobile:"058-7870-958",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:238,name:"פרץ",type:"private",phone:"052-7142-543",mobile:"052-7142-543",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:239,name:"דודי קנופלר",type:"private",phone:"",mobile:"",city:"גוש עציון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:240,name:"רחל רוזנפלד",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:241,name:"מאיר שטיין",type:"private",phone:"052-5458-777",mobile:"052-5458-777",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:242,name:"דודי שוורץ טהרת המשפחה",type:"private",phone:"058-6272-852",mobile:"058-6272-852",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:243,name:"אלי שיף",type:"private",phone:"054-4446-070",mobile:"054-4446-070",city:"שכונת בקה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:244,name:"אלטוסקי",type:"private",phone:"002-5618-558",mobile:"002-5618-558",city:"קרית גת",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:245,name:"אלישבע",type:"private",phone:"058-3233-040",mobile:"058-3233-040",city:"ימין משה",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:246,name:"עמרם גרינוולד 2",type:"private",phone:"053-3111-695",mobile:"053-3111-695",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:247,name:"אברומובסקי",type:"private",phone:"050-4193-331",mobile:"050-4193-331",city:"חולון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:248,name:"מזכירות בית עולות",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:249,name:"אייכן",type:"private",phone:"052-5223-549",mobile:"052-5223-549",city:"תל ציון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:250,name:"משה אריה הרשקוביץ",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:251,name:"ריקי שפירא",type:"private",phone:"054-4544-173",mobile:"054-4544-173",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:252,name:"רוחי אילוביץ בוואצאפ",type:"private",phone:"054-3103-448",mobile:"054-3103-448",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:253,name:"הרצל",type:"private",phone:"053-3109-748",mobile:"053-3109-748",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:254,name:"אהרן מרדר",type:"private",phone:"054-8592-558",mobile:"054-8592-558",city:"מושה עמינדב",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:255,name:"שלאס יעקב אשר",type:"private",phone:"050-4123-020",mobile:"050-4123-020",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:256,name:"יעקב שפירא",type:"private",phone:"055-6763-736",mobile:"055-6763-736",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:257,name:"יהושע פרקוביץ",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:258,name:"ריווי בארד",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:259,name:"מינהל קהילתי מעלה רמות",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:260,name:"לבנה  הרוש",type:"private",phone:"",mobile:"",city:"קרית משה- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:261,name:"נחום קורפו",type:"private",phone:"",mobile:"",city:"איסוף עצמי",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:262,name:"בית לפליטות",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:263,name:"שידלובסקי",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:264,name:"יהודית זידלה",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:265,name:"מוסדות זוויהל",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:266,name:"בנימין רוטנברג",type:"private",phone:"",mobile:"",city:"קטמון",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:267,name:"אפרים שטרן ארה\"ב",type:"private",phone:"",mobile:"",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:268,name:"תורה ותפילה",type:"private",phone:"",mobile:"",city:"בני ברק",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:269,name:"חיה לוין",type:"private",phone:"",mobile:"",city:"רמות- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:270,name:"נחמן ישורון",type:"private",phone:"",mobile:"",city:"רמת שלמה- ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:271,name:"משה גליס",type:"private",phone:"",mobile:"",city:"ירושלים",email:"",notes:"",orderCount:5,createdAt:'2024-01-01'},
+  {id:272,name:"מיכל",type:"private",phone:"054-2548-420",mobile:"054-2548-420",city:"הר חוצבים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:273,name:"נתן",type:"private",phone:"054-3775-779",mobile:"054-3775-779",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:274,name:"יהושע ווינברגר מוסדות צאנז",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:275,name:"ישראל",type:"private",phone:"054-8413-595",mobile:"054-8413-595",city:"ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:276,name:"לוי",type:"private",phone:"1917-6817-005",mobile:"1917-6817-005",city:"איסוף עצמי",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:277,name:"ידידיה מוסדות דאראג",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:278,name:"איטי",type:"private",phone:"",mobile:"",city:"קוממיות",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:279,name:"בנצי וויינטרויב מפיק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:280,name:"לבנה הרוש- תב\"ע קפיטל",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:281,name:"יצחק פרידמן",type:"private",phone:"347-6783-254",mobile:"347-6783-254",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:282,name:"רובין",type:"private",phone:"058-3296-929",mobile:"058-3296-929",city:"ירושלים רחוק",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:283,name:"חיים לוברבום",type:"private",phone:"052-7681-995",mobile:"052-7681-995",city:"ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:284,name:"רבקי פרוש/לימון מילה של איכות",type:"private",phone:"073-7693-799",mobile:"073-7693-799",city:"בית שמש",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:285,name:"חיה הורביץ",type:"private",phone:"054-8419-990",mobile:"054-8419-990",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:286,name:"מתנה פופקא",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:287,name:"נחמה פיק",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:288,name:"סנקביץ ישראל",type:"private",phone:"050-5988-178",mobile:"050-5988-178",city:"הר נוף- ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:289,name:"אפרים לודמיר",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:290,name:"איצקוביץ בנציון",type:"private",phone:"054-8461-075",mobile:"054-8461-075",city:"הדסה עין כרם",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:291,name:"רבינוביץ חיים",type:"private",phone:"052-5654-000",mobile:"052-5654-000",city:"ביתר",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:292,name:"גני ילדים בית יעקב",type:"private",phone:"050-4150-145",mobile:"050-4150-145",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:293,name:"ווייס הרב",type:"private",phone:"002-5387-410",mobile:"002-5387-410",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:294,name:"חנוך אייזנברג",type:"private",phone:"",mobile:"",city:"מלון דן",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:295,name:"איידלמן",type:"private",phone:"058-3291-341",mobile:"058-3291-341",city:"קריית ים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:296,name:"ישראל סגל",type:"private",phone:"",mobile:"",city:"בית וגן- ירושלים",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:297,name:"שאול פלדמן",type:"private",phone:"",mobile:"",city:"בית שמש",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:298,name:"צינוירט",type:"private",phone:"",mobile:"",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:299,name:"רוזמן",type:"private",phone:"052-7158-412",mobile:"052-7158-412",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'},
+  {id:300,name:"דודק",type:"private",phone:"053-3108-110",mobile:"053-3108-110",city:"",email:"",notes:"",orderCount:4,createdAt:'2024-01-01'}
+];
+const EMPLOYEES_DB = [
+{id:1,name:"אייזיק",phone:'',role:'מזכירה'},
+  {id:2,name:"חיה שורי",phone:'',role:'מזכירה'},
+  {id:3,name:"יוכבד",phone:'',role:'מזכירה'},
+  {id:4,name:"שרה הירש",phone:'',role:'מזכירה'}
+];
+</script>
+</head><body>'
     + '<h2>🍎 עיצוב בפרי</h2><p style="color:#999;font-size:12px;">קבלה מס\' ' + o.orderNum + '</p><hr>'
     + rows
     + '<p style="text-align:center;margin-top:30px;color:#B89A28;font-weight:700;">תודה על הקנייה! 🍎</p>'
@@ -1427,10 +2404,7 @@ function renderWork() {
   <style>
     .done-row td { opacity: 0.5; background: #F8FFF0 !important; }
     @media print { .no-print { display:none; } }
-  
-/* ===== MOBILE ===== */
-
-</style>`;
+  </style>`;
 }
 
 function workToggle(id, field, label) {
@@ -1487,11 +2461,122 @@ function bindEvents() {
   if (logoImg) logoImg.src = LOGO_SRC;
 }
 
+// ===================== EMPLOYEES =====================
+function renderEmployees() {
+  const emps = typeof EMPLOYEES_DB !== 'undefined' ? EMPLOYEES_DB : DB.employees || [];
+  const total = emps.reduce((s,e) => s+e.revenue, 0);
+  return `
+  <div class="stat-grid">
+    ${emps.map(e => `
+      <div class="stat-card" style="border-top-color:var(--green-mid)">
+        <div class="label">👩‍💼 ${escHtml(e.name)}</div>
+        <div class="value" style="font-size:22px;">${e.orders.toLocaleString()}</div>
+        <div class="label">הזמנות | ₪${e.revenue.toLocaleString()}</div>
+      </div>
+    `).join('')}
+  </div>
+  <div class="card">
+    <div class="card-header"><h2>📊 ביצועי עובדות</h2></div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>שם</th><th>הזמנות</th><th>הכנסות</th><th>% מהסה"כ</th></tr>
+        ${emps.map(e => `
+          <tr>
+            <td><strong>${escHtml(e.name)}</strong></td>
+            <td>${e.orders.toLocaleString()}</td>
+            <td>₪${e.revenue.toLocaleString()}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;background:#F0F0F0;border-radius:10px;height:8px;">
+                  <div style="width:${total>0?Math.round(e.revenue/total*100):0}%;background:var(--green-mid);height:100%;border-radius:10px;"></div>
+                </div>
+                <span>${total>0?Math.round(e.revenue/total*100):0}%</span>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+        <tr style="font-weight:800;background:#F0F6E8">
+          <td>סה"כ</td>
+          <td>${emps.reduce((s,e)=>s+e.orders,0).toLocaleString()}</td>
+          <td>₪${total.toLocaleString()}</td>
+          <td>100%</td>
+        </tr>
+      </table>
+    </div>
+  </div>`;
+}
 
-// ===== MOBILE =====
-function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('active');}
-function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('active');}
-document.addEventListener('click',e=>{if(e.target.closest('[data-page]')&&window.innerWidth<=768)closeSidebar();});
+// ===================== REPORTS =====================
+function renderReports() {
+  const months = typeof MONTHLY_DATA !== 'undefined' ? MONTHLY_DATA : [];
+  const totalRev = months.reduce((s,m) => s+m.revenue, 0);
+  const totalOrders = months.reduce((s,m) => s+m.orders, 0);
+  const maxRev = Math.max(...months.map(m => m.revenue), 1);
+
+  // Group by year
+  const byYear = {};
+  for (const m of months) {
+    const [mo, yr] = m.month.split('-');
+    if (!byYear[yr]) byYear[yr] = {orders:0, revenue:0, months:[]};
+    byYear[yr].orders += m.orders;
+    byYear[yr].revenue += m.revenue;
+    byYear[yr].months.push(m);
+  }
+
+  return `
+  <div class="stat-grid">
+    <div class="stat-card gold"><div class="label">סה"כ הכנסות</div><div class="value" style="font-size:20px">₪${Math.round(totalRev).toLocaleString()}</div></div>
+    <div class="stat-card"><div class="label">סה"כ הזמנות</div><div class="value">${totalOrders.toLocaleString()}</div></div>
+    <div class="stat-card blue"><div class="label">ממוצע חודשי</div><div class="value" style="font-size:20px">₪${months.length?Math.round(totalRev/months.length).toLocaleString():0}</div></div>
+    <div class="stat-card"><div class="label">ממוצע להזמנה</div><div class="value" style="font-size:20px">₪${totalOrders?Math.round(totalRev/totalOrders).toLocaleString():0}</div></div>
+  </div>
+
+  <!-- שנתי -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:20px;">
+    ${Object.entries(byYear).sort((a,b)=>b[0]-a[0]).map(([yr,d]) => `
+      <div class="card" style="text-align:center">
+        <div style="font-size:24px;font-weight:800;color:var(--green-dark)">${yr}</div>
+        <div style="font-size:22px;font-weight:800;color:var(--gold)">₪${Math.round(d.revenue).toLocaleString()}</div>
+        <div style="color:var(--text-muted);font-size:13px">${d.orders.toLocaleString()} הזמנות</div>
+      </div>
+    `).join('')}
+  </div>
+
+  <!-- חודשי -->
+  <div class="card">
+    <div class="card-header"><h2>📅 דוח חודשי</h2></div>
+    ${months.length === 0 ? '<p style="text-align:center;color:var(--text-muted);padding:20px">אין נתונים</p>' : `
+    <div style="padding:10px 0;">
+      ${months.slice().reverse().map(m => {
+        const bar = Math.round(m.revenue/maxRev*100);
+        const [mo, yr] = m.month.split('-');
+        const monthNames = {'1':'ינואר','2':'פברואר','3':'מרץ','4':'אפריל','5':'מאי','6':'יוני','7':'יולי','8':'אוגוסט','9':'ספטמבר','10':'אוקטובר','11':'נובמבר','12':'דצמבר'};
+        return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="min-width:100px;font-size:13px;font-weight:600">${monthNames[mo]||mo} ${yr}</div>
+          <div style="min-width:60px;text-align:left;font-size:12px;color:var(--text-muted)">${m.orders} הזמנות</div>
+          <div style="flex:1;background:#F0F0F0;border-radius:10px;height:12px;overflow:hidden;">
+            <div style="width:${bar}%;background:var(--green-mid);height:100%;border-radius:10px;"></div>
+          </div>
+          <div style="min-width:90px;text-align:left;font-weight:700;color:var(--green-dark)">₪${Math.round(m.revenue).toLocaleString()}</div>
+        </div>`;
+      }).join('')}
+    </div>`}
+  </div>`;
+}
+
+// ===================== MOBILE SIDEBAR =====================
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('active');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('active');
+}
+// Close sidebar when nav item clicked on mobile
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-page]') && window.innerWidth <= 768) closeSidebar();
+});
 
 // ===================== INIT =====================
 document.getElementById('logo-img').src = LOGO_SRC;
