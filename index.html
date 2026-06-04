@@ -231,7 +231,7 @@ tr:last-child td { border-bottom: none; }
 }
 #toast.show { opacity: 1; }
 </style>
-<script src="data.js"></script>
+
 </head>
 <body>
 
@@ -278,8 +278,29 @@ tr:last-child td { border-bottom: none; }
 <script>
 // ===================== DATA STORE =====================
 const DB = {
-  customers: typeof CUSTOMERS_DB !== "undefined" ? CUSTOMERS_DB : [],
-  employees: typeof EMPLOYEES_DB !== "undefined" ? EMPLOYEES_DB : [],
+  customers: [
+{id:1,name:"איחוד גור",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:517,createdAt:"2024-01-01"},
+{id:2,name:"דודי שכטר",type:"institutional",phone:"",mobile:"",city:"כפר חבד",orderCount:160,createdAt:"2024-01-01"},
+{id:3,name:"משה איידלמן",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:125,createdAt:"2024-01-01"},
+{id:4,name:"נחלת יעקב",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:124,createdAt:"2024-01-01"},
+{id:5,name:"רחל בוקשפן",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:101,createdAt:"2024-01-01"},
+{id:6,name:"בנדיקט",type:"institutional",phone:"054-8458-853",mobile:"054-8458-853",city:"בית וגן- ירושלים",orderCount:69,createdAt:"2024-01-01"},
+{id:7,name:"אשר סולניק",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:47,createdAt:"2024-01-01"},
+{id:8,name:"ישכר יאקאב",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:37,createdAt:"2024-01-01"},
+{id:9,name:"יענקל אטיק",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:36,createdAt:"2024-01-01"},
+{id:10,name:"אמונת ציון",type:"institutional",phone:"050-4141-373",mobile:"050-4141-373",city:"חפץ חיים",orderCount:22,createdAt:"2024-01-01"},
+{id:11,name:"יהושע רייס",type:"institutional",phone:"",mobile:"",city:"ירושלים",orderCount:35,createdAt:"2024-01-01"},
+{id:12,name:"פרץ הירשנבוים",type:"private",phone:"054-9355-376",mobile:"054-9355-376",city:"קרית משה- ירושלים",orderCount:13,createdAt:"2024-01-01"},
+{id:13,name:"אהרן ויינברג",type:"private",phone:"053-3160-170",mobile:"053-3160-170",city:"מודיעין עילית",orderCount:12,createdAt:"2024-01-01"},
+{id:14,name:"שלמה בן שעיה",type:"private",phone:"052-7665-991",mobile:"052-7665-991",city:"ירושלים",orderCount:14,createdAt:"2024-01-01"},
+{id:15,name:"תמר גדידי",type:"private",phone:"",mobile:"",city:"ירושלים",orderCount:5,createdAt:"2024-01-01"},
+{id:16,name:"דוד יוחנן",type:"private",phone:"",mobile:"",city:"ירושלים",orderCount:4,createdAt:"2024-01-01"},
+{id:17,name:"בערל דאווידאויטש",type:"private",phone:"",mobile:"",city:"ירושלים",orderCount:3,createdAt:"2024-01-01"},
+{id:18,name:"קויפמן",type:"private",phone:"050-4174-595",mobile:"050-4174-595",city:"ירושלים",orderCount:9,createdAt:"2024-01-01"},
+{id:19,name:"שמואל קמרסקי",type:"private",phone:"",mobile:"",city:"ירושלים",orderCount:4,createdAt:"2024-01-01"},
+{id:20,name:"נפתלי אינדיג",type:"private",phone:"",mobile:"",city:"ירושלים",orderCount:3,createdAt:"2024-01-01"}
+],
+  employees: [{id:1,name:"יוכבד",phone:"",role:"מזכירה"},{id:2,name:"שרה הירש",phone:"",role:"מזכירה"},{id:3,name:"חיה שורי",phone:"",role:"מזכירה"},{id:4,name:"אייזיק",phone:"",role:"מזכירה"}],
   products: [
     { id: 1, sku: "102", name: "סל פירות מק\"ט 102", content: "פירות עונתיים בעיצוב מיוחד", length: 0, width: 0, weight: 0, price: 300, price_usd: 74, catalog: "כללי 2026" },
     { id: 2, sku: "101", name: "סל פירות מק\"ט 101", content: "פירות עונתיים בעיצוב מיוחד", length: 0, width: 0, weight: 0, price: 300, price_usd: 74, catalog: "כללי 2026" },
