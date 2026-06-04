@@ -260,8 +260,12 @@ tr:last-child td { border-bottom: none; }
 
   <!-- Main -->
   <div id="main">
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
     <div id="topbar">
-      <h1 id="page-title">דשבורד</h1>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+        <h1 id="page-title">דשבורד</h1>
+      </div>
       <div class="topbar-actions" id="topbar-actions"></div>
     </div>
     <div id="content"></div>
@@ -1378,7 +1382,29 @@ function renderWork() {
   <style>
     .done-row td { opacity: 0.5; background: #F8FFF0 !important; }
     @media print { .no-print { display:none; } }
-  </style>`;
+  
+/* ===== MOBILE ===== */
+.hamburger { display:none; background:none; border:none; cursor:pointer; flex-direction:column; gap:5px; padding:4px; }
+.hamburger span { display:block; width:24px; height:2px; background:var(--green-dark); border-radius:2px; transition:all 0.3s; }
+.sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:90; }
+.sidebar-overlay.active { display:block; }
+@media (max-width: 768px) {
+  #sidebar { position:fixed; right:-220px; top:0; height:100vh; transition:right 0.3s ease; z-index:100; }
+  #sidebar.open { right:0; }
+  #main { margin-right:0; }
+  #topbar { padding:12px 16px; }
+  #topbar h1 { font-size:16px; }
+  #content { padding:14px; }
+  .hamburger { display:flex; }
+  .stat-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .stat-card .value { font-size:22px; }
+  .form-grid, .form-grid.wide { grid-template-columns:1fr; }
+  table { font-size:12px; }
+  th, td { padding:8px 10px; }
+  .btn { padding:8px 14px; font-size:13px; }
+  .card { padding:14px; }
+}
+</style>`;
 }
 
 function workToggle(id, field, label) {
@@ -1434,6 +1460,12 @@ function bindEvents() {
   const logoImg = document.getElementById('logo-img');
   if (logoImg) logoImg.src = LOGO_SRC;
 }
+
+
+// ===== MOBILE =====
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('active');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('active');}
+document.addEventListener('click',e=>{if(e.target.closest('[data-page]')&&window.innerWidth<=768)closeSidebar();});
 
 // ===================== INIT =====================
 document.getElementById('logo-img').src = LOGO_SRC;
