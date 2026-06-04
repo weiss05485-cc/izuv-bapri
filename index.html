@@ -252,6 +252,8 @@ tr:last-child td { border-bottom: none; }
   .btn { padding:8px 14px; font-size:13px; }
   .card { padding:14px; }
 }
+
+body { overflow-x: hidden; }
 </style>
 
 </head>
@@ -514,7 +516,7 @@ function escHtml(s) {
 
 // ===================== LOGO =====================
 // Logo stored as data URL (user's logo)
-const LOGO_SRC = 'img_Im0.png';
+const LOGO_SRC = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cellipse cx='50' cy='62' rx='36' ry='40' fill='%239BBF3A'/%3E%3Crect x='14' y='54' width='72' height='10' fill='%236B8F2A'/%3E%3Crect x='14' y='64' width='72' height='10' fill='%233E5C1A'/%3E%3Crect x='16' y='74' width='68' height='10' fill='%23B89A28' rx='2'/%3E%3Cellipse cx='50' cy='62' rx='36' ry='40' fill='none' stroke='%233E5C1A' stroke-width='1.5'/%3E%3Cellipse cx='36' cy='26' rx='9' ry='13' fill='%239BBF3A' transform='rotate(-20 36 26)'/%3E%3Cpath d='M47 23 Q52 11 58 19' stroke='%236B8F2A' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
 let currentPage = 'dashboard';
 
 function navigate(page) {
