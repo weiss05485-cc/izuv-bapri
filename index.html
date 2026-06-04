@@ -11,7 +11,7 @@
   --green-dark:  #3E5C1A;
   --gold:        #B89A28;
   --gold-light:  #D4B84A;
-  --bg:          #F7F9F2;
+  --bg:          #F7F9F2;h
   --bg-card:     #FFFFFF;
   --text:        #2A2A2A;
   --text-muted:  #6B7A5A;
@@ -417,6 +417,11 @@ const DB = {
     { id: 136, sku: "s135", name: "עיצוב שבועות מק\"ט s135", content: "עיצוב מיוחד לשבועות", length: 0, width: 0, weight: 0, price: 390, price_usd: 135, catalog: "שבועות תשפ\"ו" },
     { id: 137, sku: "s121", name: "עיצוב שבועות מק\"ט s121", content: "עיצוב מיוחד לשבועות", length: 0, width: 0, weight: 0, price: 350, price_usd: 121, catalog: "שבועות תשפ\"ו" },
     { id: 138, sku: "s187", name: "עיצוב שבועות מק\"ט s187", content: "עיצוב מיוחד לשבועות", length: 0, width: 0, weight: 0, price: 540, price_usd: 187, catalog: "שבועות תשפ\"ו" },
+  ],
+  orders: [
+    { id: 1001, orderNum: 'HF-1001', customerId: 1, customerName: 'שרה כהן', customerType: 'private', deliveryDate: '2024-06-10', deliveryTime: '10:00', city: 'ירושלים', firstName: 'שרה', lastName: 'כהן', phone: '052-1111111', mobile: '050-1111111', productId: 1, productName: 'סל פירות מק"ט 102', notes: '', blessing: 'מזל טוב!', kafe: 50, designPrice: 300, deliveryCost: 40, graphicsCost: 0, paymentMethod: 'credit', paymentDone: true, totalPrice: 390, deliveryTo: 'משפחת לוי', address: "רח' הצבי 5", entrance: 'א', floor: '3', apt: '12', neighborhood: 'גילה', senderName: 'שרה כהן', senderPhone: '052-1111111', senderMobile: '050-1111111', receiverName: 'רחל לוי', receiverPhone: '053-3333333', receiverMobile: '053-3333333', deliveryNotes: '', status: 'done', paymentStatus: 'paid', colklarDone: true, fruitsDone: true, closeDone: true, createdAt: '2024-06-05' },
+    { id: 1002, orderNum: 'HF-1002', customerId: 2, customerName: 'רחל לוי', customerType: 'private', deliveryDate: '2024-06-12', deliveryTime: '14:00', city: 'חיפה', firstName: 'רחל', lastName: 'לוי', phone: '053-2222222', mobile: '053-2222222', productId: 3, productName: 'עיצוב שבועות מק"ט s101', notes: '', blessing: 'ברכות!', kafe: 80, designPrice: 275, deliveryCost: 60, graphicsCost: 30, paymentMethod: 'transfer', paymentDone: false, totalPrice: 445, deliveryTo: 'משפחת אברהם', address: "שד' הנשיא 20", entrance: 'ב', floor: '5', apt: '18', neighborhood: 'כרמל', senderName: 'רחל לוי', senderPhone: '053-2222222', senderMobile: '053-2222222', receiverName: 'דוד אברהם', receiverPhone: '054-4444444', receiverMobile: '054-4444444', deliveryNotes: '', status: 'in-progress', paymentStatus: 'pending', colklarDone: false, fruitsDone: false, closeDone: false, createdAt: '2024-06-08' },
+    { id: 1003, orderNum: 'HF-1003', customerId: 3, customerName: 'איחוד גור', customerType: 'institutional', deliveryDate: '2024-06-15', deliveryTime: '09:00', city: 'ירושלים', firstName: 'דוד', lastName: 'מנהל', phone: '02-5555555', mobile: '054-5555555', productId: 4, productName: 'סל פירות מק"ט 104', notes: '5 מגשים', blessing: '', kafe: 0, designPrice: 1900, deliveryCost: 100, graphicsCost: 0, paymentMethod: 'check', paymentDone: false, totalPrice: 2000, deliveryTo: 'איחוד גור', address: "רח' ויצמן 55", entrance: '', floor: '1', apt: '', neighborhood: '', senderName: 'עיצוב בפרי', senderPhone: '054-8468002', senderMobile: '054-8468002', receiverName: 'מזכירות', receiverPhone: '02-5555555', receiverMobile: '', deliveryNotes: 'למסור למזכירות', status: 'waiting', paymentStatus: 'pending', colklarDone: false, fruitsDone: false, closeDone: false, createdAt: '2024-06-09' }
   ],
   nextId: 1004,
   nextCustomerId: 4,
