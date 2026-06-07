@@ -978,10 +978,16 @@ function renderOrderForm(editId) {
         <div class="field"><label>עיר *</label><input type="text" name="city" value="${v('city')}" required placeholder="עיר"></div>
 
         <div class="section-title">👤 פרטי הלקוח</div>
-        <div class="field"><label>שם פרטי *</label><input type="text" name="firstName" value="${v('firstName')}" required></div>
-        <div class="field"><label>שם משפחה *</label><input type="text" name="lastName" value="${v('lastName')}" required></div>
-        <div class="field"><label>טלפון</label><input type="tel" name="phone" value="${v('phone')}"></div>
-        <div class="field"><label>נייד</label><input type="tel" name="mobile" value="${v('mobile')}"></div>
+        <div class="field" style="grid-column:1/-1;position:relative">
+          <label>🔍 חיפוש לקוח קיים</label>
+          <input type="text" id="cust-autocomplete" placeholder="התחל להקליד שם לקוח..." autocomplete="off"
+            oninput="custAutocomplete(this.value)" onblur="setTimeout(()=>document.getElementById('cust-dropdown')&&(document.getElementById('cust-dropdown').style.display='none'),200)">
+          <div id="cust-dropdown" style="display:none;position:absolute;top:100%;right:0;left:0;background:white;border:1.5px solid var(--green-mid);border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,0.15)"></div>
+        </div>
+        <div class="field"><label>שם פרטי *</label><input type="text" name="firstName" id="f-firstName" value="${v('firstName')}" required></div>
+        <div class="field"><label>שם משפחה *</label><input type="text" name="lastName" id="f-lastName" value="${v('lastName')}" required></div>
+        <div class="field"><label>טלפון</label><input type="tel" name="phone" id="f-phone" value="${v('phone')}"></div>
+        <div class="field"><label>נייד</label><input type="tel" name="mobile" id="f-mobile" value="${v('mobile')}"></div>
         <div class="field"><label>סוג לקוח</label>
           <select name="customerType">
             <option value="private" ${v('customerType','private')==='private'?'selected':''}>פרטי</option>
@@ -1047,13 +1053,104 @@ function renderOrderForm(editId) {
         <div class="field" style="grid-column:1/-1"><label>הערות למשלוחן</label><textarea name="deliveryNotes">${v('deliveryNotes')}</textarea></div>
       </div>
 
-      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);flex-wrap:wrap;">
         <button type="button" class="btn btn-outline" data-page="orders">ביטול</button>
-        <button type="submit" class="btn btn-primary">💾 ${isEdit ? 'שמור שינויים' : 'צור הזמנה'}</button>
+        ${isEdit ? `<button type="button" class="btn btn-gold" onclick="printOrderForm(${editId})">🖨 הדפס הזמנה</button>` : ''}
+        <button type="submit" class="btn btn-primary" id="submit-order-btn">💾 ${isEdit ? 'שמור שינויים' : 'צור הזמנה'}</button>
       </div>
     </form>
   </div>`;
 }
+
+// ===== CUSTOMER AUTOCOMPLETE =====
+function custAutocomplete(q) {
+  const dd = document.getElementById('cust-dropdown');
+  if (!dd) return;
+  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
+  const results = DB.customers
+    .filter(c => c.name.includes(q) || (c.phone||'').includes(q))
+    .slice(0, 15);
+  if (results.length === 0) { dd.style.display = 'none'; return; }
+  dd.innerHTML = results.map(c => `
+    <div onclick="fillCustomer(${c.id})" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;"
+      onmouseover="this.style.background='#F0F6E8'" onmouseout="this.style.background='white'">
+      <strong>${escHtml(c.name)}</strong>
+      ${c.phone ? `<span style="color:var(--text-muted);font-size:12px;margin-right:8px">${escHtml(c.phone)}</span>` : ''}
+      ${c.city ? `<span style="color:var(--text-muted);font-size:12px">${escHtml(c.city)}</span>` : ''}
+      <span class="badge ${c.type==='institutional'?'badge-blue':'badge-green'}" style="float:left;font-size:11px">${c.type==='institutional'?'מוסדי':'פרטי'}</span>
+    </div>`).join('');
+  dd.style.display = 'block';
+}
+
+function fillCustomer(id) {
+  const c = DB.customers.find(x => x.id === id);
+  if (!c) return;
+  // Fill form fields
+  const parts = c.name.split(' ');
+  const fn = document.getElementById('f-firstName');
+  const ln = document.getElementById('f-lastName');
+  const ph = document.getElementById('f-phone');
+  const mb = document.getElementById('f-mobile');
+  const ac = document.getElementById('cust-autocomplete');
+  const dd = document.getElementById('cust-dropdown');
+  if (fn) fn.value = parts[0] || '';
+  if (ln) ln.value = parts.slice(1).join(' ') || '';
+  if (ph) ph.value = c.phone || '';
+  if (mb) mb.value = c.mobile || c.phone || '';
+  if (ac) ac.value = c.name;
+  if (dd) dd.style.display = 'none';
+  // Also fill city
+  const cityInput = document.querySelector('input[name="city"]');
+  if (cityInput && c.city) cityInput.value = c.city;
+  toast('לקוח נבחר: ' + c.name);
+}
+
+// ===== PRINT ORDER =====
+function printOrderForm(id) {
+  const o = DB.orders.find(x => x.id === id);
+  if (!o) return;
+  const win = window.open('', '_blank');
+  win.document.write('<html dir="rtl"><head><meta charset="UTF-8"><title>הזמנה ' + o.orderNum + '</title>'
+    + '<style>body{font-family:Arial;padding:30px;direction:rtl;max-width:700px;margin:0 auto}'
+    + 'h1{color:#3E5C1A;border-bottom:3px solid #B89A28;padding-bottom:10px}'
+    + 'h3{color:#3E5C1A;margin-top:20px;border-bottom:1px solid #eee;padding-bottom:5px}'
+    + '.row{display:flex;gap:20px;margin-bottom:6px}'
+    + '.key{font-weight:700;min-width:130px;color:#555}'
+    + '.val{flex:1}'
+    + '.total{font-size:22px;font-weight:800;color:#3E5C1A;text-align:center;margin:20px 0;padding:15px;background:#F7F9F2;border-radius:8px;border:2px solid #B89A28}'
+    + '@media print{.no-print{display:none}}'
+    + '</style></head><body>'
+    + '<h1>🍎 עיצוב בפרי — הזמנה ' + o.orderNum + '</h1>'
+    + '<h3>📅 פרטי משלוח</h3>'
+    + '<div class="row"><span class="key">תאריך:</span><span class="val">' + (o.deliveryDate||'') + ' ' + (o.deliveryTime||'') + '</span></div>'
+    + '<div class="row"><span class="key">עיר:</span><span class="val">' + (o.city||'') + '</span></div>'
+    + '<h3>👤 פרטי לקוח</h3>'
+    + '<div class="row"><span class="key">שם:</span><span class="val">' + (o.firstName||'') + ' ' + (o.lastName||'') + '</span></div>'
+    + '<div class="row"><span class="key">טלפון:</span><span class="val">' + (o.phone||'') + '</span></div>'
+    + '<div class="row"><span class="key">נייד:</span><span class="val">' + (o.mobile||'') + '</span></div>'
+    + '<h3>🍎 פרטי המוצר</h3>'
+    + '<div class="row"><span class="key">מוצר:</span><span class="val">' + (o.productName||'') + '</span></div>'
+    + '<div class="row"><span class="key">ברכה:</span><span class="val">' + (o.blessing||'—') + '</span></div>'
+    + '<div class="row"><span class="key">הערות:</span><span class="val">' + (o.notes||'—') + '</span></div>'
+    + '<div class="row"><span class="key">קאפה:</span><span class="val">₪' + (o.kafe||0) + '</span></div>'
+    + '<h3>💰 תשלום</h3>'
+    + '<div class="row"><span class="key">מחיר עיצוב:</span><span class="val">₪' + (o.designPrice||0) + '</span></div>'
+    + '<div class="row"><span class="key">משלוח:</span><span class="val">₪' + (o.deliveryCost||0) + '</span></div>'
+    + '<div class="row"><span class="key">גרפיקה:</span><span class="val">₪' + (o.graphicsCost||0) + '</span></div>'
+    + '<div class="row"><span class="key">אמצעי תשלום:</span><span class="val">' + (o.paymentMethod||'') + '</span></div>'
+    + '<div class="total">סה"כ לתשלום: ₪' + (o.totalPrice||0).toLocaleString() + '</div>'
+    + '<h3>📦 פרטי משלוח</h3>'
+    + '<div class="row"><span class="key">למשפחת:</span><span class="val">' + (o.deliveryTo||'') + '</span></div>'
+    + '<div class="row"><span class="key">כתובת:</span><span class="val">' + (o.address||'') + (o.entrance?' כניסה '+o.entrance:'') + (o.floor?' קומה '+o.floor:'') + (o.apt?' דירה '+o.apt:'') + '</span></div>'
+    + '<div class="row"><span class="key">שם מקבל:</span><span class="val">' + (o.receiverName||'') + '</span></div>'
+    + '<div class="row"><span class="key">טלפון מקבל:</span><span class="val">' + (o.receiverPhone||'') + '</span></div>'
+    + (o.deliveryNotes ? '<div class="row"><span class="key">הערות:</span><span class="val">' + o.deliveryNotes + '</span></div>' : '')
+    + '<br><div class="no-print" style="text-align:center"><button onclick="window.print()" style="padding:12px 30px;background:#3E5C1A;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer">🖨 הדפס</button></div>'
+    + '<scr' + 'ipt>window.print();</scr' + 'ipt></body></html>');
+}
+
+// Also: after submitting new order, offer print
+const _origNavigateAfterOrder = navigate;
 
 function updateProductPrice(sel) {
   const opt = sel.options[sel.selectedIndex];
@@ -1126,6 +1223,12 @@ function submitOrder(e, editId) {
     DB.nextId++;
     if (paymentDone) toast('הזמנה נוצרה ✅ — חשבונית הופקה');
     else toast('הזמנה נוצרה ✅ — עברה למעקב גביה');
+    // Ask to print
+    setTimeout(() => {
+      if (confirm('הזמנה ' + newOrder.orderNum + ' נוצרה! האם להדפיס?')) {
+        printOrderForm(newOrder.id);
+      }
+    }, 300);
   }
   window._orderFilter = 'all';
   navigate('orders');
