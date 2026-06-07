@@ -1802,10 +1802,9 @@ async function gsGet(action) {
 
 async function gsPost(action, data) {
   try {
-    const r = await fetch(GS_URL, {
-      method: 'POST',
-      body: JSON.stringify({action, data})
-    });
+    // Use GET with encoded data to avoid CORS issues
+    const encoded = encodeURIComponent(JSON.stringify(data));
+    const r = await fetch(`${GS_URL}?action=${action}&data=${encoded}`);
     return await r.json();
   } catch(e) { console.warn('GS POST error:', e); return null; }
 }
