@@ -1687,8 +1687,48 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-page]') && window.innerWidth <= 768) closeSidebar();
 });
 
+// ===================== LOCAL STORAGE PERSISTENCE =====================
+const LS_KEY = 'izuv_bapri_data';
+
+function saveToLocalStorage() {
+  try {
+    const saved = {
+      orders: DB.orders,
+      customers: DB._customers || [],
+      nextId: DB.nextId,
+      nextCustomerId: DB.nextCustomerId,
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(saved));
+  } catch(e) { console.warn('Save failed:', e); }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.orders?.length)    DB.orders = saved.orders;
+    if (saved.customers?.length) DB._customers = saved.customers;
+    if (saved.nextId)             DB.nextId = saved.nextId;
+    if (saved.nextCustomerId)     DB.nextCustomerId = saved.nextCustomerId;
+    console.log('Loaded from localStorage:', DB.orders.length, 'orders');
+  } catch(e) { console.warn('Load failed:', e); }
+}
+
+// Auto-save after any data change
+const _origSubmitOrder = submitOrder;
+const _origMarkPaid = markPaid;
+const _origSaveCustomer = saveCustomer;
+const _origDeleteCustomer = deleteCustomer;
+const _origWorkToggle = workToggle;
+
+function submitOrder(e, editId) { _origSubmitOrder(e, editId); saveToLocalStorage(); }
+function markPaid(id) { _origMarkPaid(id); saveToLocalStorage(); }
+function workToggle(id, field, label) { _origWorkToggle(id, field, label); saveToLocalStorage(); }
+
 // ===================== INIT =====================
 document.getElementById('logo-img').src = LOGO_SRC;
+loadFromLocalStorage();
 render();
 </script>
 </body>
