@@ -1807,21 +1807,27 @@ document.addEventListener('click', e => {
 // ===================== GOOGLE SHEETS API =====================
 const GS_URL = 'https://script.google.com/macros/s/AKfycbweQgy6qlG34e6qlCJbQapY5BKDezr43tFeOeNRfXjeaE5-MrXsEyMrq2-EVzEUpTOBuQ/exec';
 
+// Load data — needs response, use regular fetch (GAS has CORS headers for GET)
 async function gsGet(action) {
   try {
     const r = await fetch(`${GS_URL}?action=${action}`);
-    return await r.json();
-  } catch(e) { console.warn('GS GET error:', e); return null; }
+    if (r.ok) return await r.json();
+  } catch(e) { console.warn('gsGet error:', e); }
+  return null;
 }
 
-async function gsPost(action, data) {
-  try {
-    // Use GET with encoded data to avoid CORS issues
-    const encoded = encodeURIComponent(JSON.stringify(data));
-    const r = await fetch(`${GS_URL}?action=${action}&data=${encoded}`);
-    return await r.json();
-  } catch(e) { console.warn('GS POST error:', e); return null; }
+// Save data — fire & forget, no need to read response
+// Use no-cors so CORS headers don't matter
+function gsSave(action, data) {
+  const encoded = encodeURIComponent(JSON.stringify(data));
+  const url = `${GS_URL}?action=${action}&data=${encoded}`;
+  // Try fetch no-cors (fires without CORS check)
+  fetch(url, {mode:'no-cors'}).catch(()=>{});
+  // Backup: also try via Image (guaranteed to fire)
+  try { new Image().src = url; } catch(e){}
 }
+
+async function gsPost(action, data) { return gsGet(action + '&data=' + encodeURIComponent(JSON.stringify(data))); }
 
 function parseOrder(o) {
   return {...o, id:parseInt(o.id)||o.id,
@@ -1879,21 +1885,11 @@ async function loadFromGoogleSheets() {
   }
 }
 
-async function saveOrderToGS(order) {
-  gsGet('saveOrder&data=' + encodeURIComponent(JSON.stringify(order))).catch(()=>{});
-}
-
-async function saveCustomerToGS(cust) {
-  gsGet('saveCustomer&data=' + encodeURIComponent(JSON.stringify(cust))).catch(()=>{});
-}
-
-async function saveProductToGS(prod) {
-  gsGet('saveProduct&data=' + encodeURIComponent(JSON.stringify(prod))).catch(()=>{});
-}
-
-async function saveTasksToGS(tasks) {
-  gsGet('saveTasks&data=' + encodeURIComponent(JSON.stringify(tasks))).catch(()=>{});
-}
+function saveOrderToGS(order)    { gsSave('saveOrder', order); }
+function saveCustomerToGS(cust)  { gsSave('saveCustomer', cust); }
+function saveProductToGS(prod)   { gsSave('saveProduct', prod); }
+function saveTasksToGS(tasks)    { gsSave('saveTasks', tasks); }
+function deleteOrderFromGS(id)   { fetch(`${GS_URL}?action=deleteOrder&id=${id}`, {mode:'no-cors'}).catch(()=>{}); }
 
 async function deleteOrderFromGS(id) {
   gsGet('deleteOrder&id=' + id).catch(()=>{});
