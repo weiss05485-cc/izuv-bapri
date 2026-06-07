@@ -764,7 +764,11 @@ function renderDashboard() {
 
 function addTask() {
   const t = prompt('משימה חדשה:');
-  if (t) { HISTORICAL.tasks.push(t); render(); toast('משימה נוספה ✅'); }
+  if (t) { HISTORICAL.tasks.push(t); saveTasksToGS(HISTORICAL.tasks); render(); toast('משימה נוספה ✅'); }
+}
+
+function deleteRow_GS(action, id) {
+  gsGet(action + '&id=' + id).catch(()=>{});
 }
 
 // ===================== ORDERS =====================
@@ -1360,20 +1364,26 @@ function saveCustomer(e, id) {
   e.preventDefault();
   const fd = new FormData(e.target);
   const data = { name: fd.get('name'), type: fd.get('type'), phone: fd.get('phone'), mobile: fd.get('mobile'), city: fd.get('city'), notes: fd.get('notes') };
+  let saved;
   if (id) {
     const idx = DB.customers.findIndex(c => c.id === id);
-    if (idx >= 0) Object.assign(DB.customers[idx], data);
+    if (idx >= 0) { Object.assign(DB.customers[idx], data); saved = DB.customers[idx]; }
     toast('לקוח עודכן ✅');
   } else {
-    DB.customers.push({ id: DB.nextCustomerId++, ...data, createdAt: new Date().toISOString().slice(0,10) });
+    saved = { id: DB.nextCustomerId++, ...data, createdAt: new Date().toISOString().slice(0,10) };
+    DB.customers.push(saved);
     toast('לקוח נוסף ✅');
   }
+  if (saved) saveCustomerToGS(saved);
+  saveToLocalStorage();
   closeModal(); render();
 }
 
 function deleteCustomer(id) {
   if (!confirm('למחוק לקוח זה?')) return;
   DB.customers = DB.customers.filter(c => c.id !== id);
+  deleteRow_GS('deleteCustomer', id);
+  saveToLocalStorage();
   toast('לקוח נמחק');
   render();
 }
@@ -1437,20 +1447,24 @@ function saveProduct(e, id) {
   e.preventDefault();
   const fd = new FormData(e.target);
   const data = { name: fd.get('name'), content: fd.get('content'), length: parseFloat(fd.get('length'))||0, width: parseFloat(fd.get('width'))||0, weight: parseFloat(fd.get('weight'))||0, price: parseFloat(fd.get('price'))||0 };
+  let saved;
   if (id) {
     const idx = DB.products.findIndex(p => p.id === id);
-    if (idx >= 0) Object.assign(DB.products[idx], data);
+    if (idx >= 0) { Object.assign(DB.products[idx], data); saved = DB.products[idx]; }
     toast('מוצר עודכן ✅');
   } else {
-    DB.products.push({ id: DB.nextProductId++, ...data });
+    saved = { id: DB.nextProductId++, ...data };
+    DB.products.push(saved);
     toast('מוצר נוסף ✅');
   }
+  if (saved) saveProductToGS(saved);
   closeModal(); render();
 }
 
 function deleteProduct(id) {
   if (!confirm('למחוק מוצר זה?')) return;
   DB.products = DB.products.filter(p => p.id !== id);
+  deleteRow_GS('deleteProduct', id);
   toast('מוצר נמחק');
   render();
 }
@@ -1809,44 +1823,80 @@ async function gsPost(action, data) {
   } catch(e) { console.warn('GS POST error:', e); return null; }
 }
 
+function parseOrder(o) {
+  return {...o, id:parseInt(o.id)||o.id,
+    kafe:parseFloat(o.kafe)||0, designPrice:parseFloat(o.designPrice)||0,
+    deliveryCost:parseFloat(o.deliveryCost)||0, graphicsCost:parseFloat(o.graphicsCost)||0,
+    totalPrice:parseFloat(o.totalPrice)||0,
+    paymentDone: o.paymentDone===true||o.paymentDone==='true'||o.paymentDone==='TRUE',
+    colklarDone: o.colklarDone==='true'||o.colklarDone===true,
+    fruitsDone: o.fruitsDone==='true'||o.fruitsDone===true,
+    closeDone: o.closeDone==='true'||o.closeDone===true,
+  };
+}
+
 async function loadFromGoogleSheets() {
   toast('⏳ טוען נתונים מ-Google Sheets...');
-  const orders = await gsGet('getOrders');
-  if (orders && Array.isArray(orders) && orders.length > 0) {
-    DB.orders = orders.map(o => ({
-      ...o,
-      id: parseInt(o.id) || o.id,
-      kafe: parseFloat(o.kafe)||0,
-      designPrice: parseFloat(o.designPrice)||0,
-      deliveryCost: parseFloat(o.deliveryCost)||0,
-      graphicsCost: parseFloat(o.graphicsCost)||0,
-      totalPrice: parseFloat(o.totalPrice)||0,
-      paymentDone: o.paymentDone === true || o.paymentDone === 'true' || o.paymentDone === 'TRUE',
-      colklarDone: o.colklarDone === 'true' || o.colklarDone === true,
-      fruitsDone: o.fruitsDone === 'true' || o.fruitsDone === true,
-      closeDone: o.closeDone === 'true' || o.closeDone === true,
-    }));
-    // Update nextId
-    const maxId = Math.max(...DB.orders.map(o => parseInt(o.id)||0), 1003);
-    DB.nextId = maxId + 1;
-    toast('✅ ' + orders.length + ' הזמנות נטענו מ-Google Sheets');
-    render();
-  } else {
-    toast('📋 אין הזמנות ב-Google Sheets עדיין');
+  try {
+    const all = await gsGet('getAll');
+    if (!all || all.error) { toast('⚠️ שגיאה בטעינה: ' + (all?.error||'timeout')); return; }
+
+    let changed = false;
+
+    // Orders
+    if (all.orders?.length > 0) {
+      DB.orders = all.orders.map(parseOrder);
+      DB.nextId = Math.max(...DB.orders.map(o=>parseInt(o.id)||0), 1003) + 1;
+      changed = true;
+    }
+
+    // Customers (new ones added via system)
+    if (all.customers?.length > 0) {
+      // Merge with existing — GS customers override
+      DB._customers = all.customers;
+      changed = true;
+    }
+
+    // Products
+    if (all.products?.length > 0) {
+      DB.products = all.products.map(p => ({...p, id:parseInt(p.id)||p.id, price:parseFloat(p.price)||0}));
+      DB.nextProductId = Math.max(...DB.products.map(p=>parseInt(p.id)||0), 4) + 1;
+      changed = true;
+    }
+
+    // Tasks
+    if (all.tasks?.length > 0) {
+      HISTORICAL.tasks = all.tasks;
+      changed = true;
+    }
+
+    const msg = `✅ נטען: ${all.orders?.length||0} הזמנות, ${all.customers?.length||0} לקוחות, ${all.products?.length||0} מוצרים, ${all.tasks?.length||0} משימות`;
+    toast(msg);
+    if (changed) render();
+  } catch(e) {
+    toast('⚠️ שגיאת חיבור ל-Google Sheets');
+    console.warn(e);
   }
 }
 
 async function saveOrderToGS(order) {
-  const result = await gsPost('saveOrder', order);
-  if (result?.ok) console.log('Order saved to GS:', order.orderNum);
-  else console.warn('GS save failed:', result);
+  gsGet('saveOrder&data=' + encodeURIComponent(JSON.stringify(order))).catch(()=>{});
+}
+
+async function saveCustomerToGS(cust) {
+  gsGet('saveCustomer&data=' + encodeURIComponent(JSON.stringify(cust))).catch(()=>{});
+}
+
+async function saveProductToGS(prod) {
+  gsGet('saveProduct&data=' + encodeURIComponent(JSON.stringify(prod))).catch(()=>{});
+}
+
+async function saveTasksToGS(tasks) {
+  gsGet('saveTasks&data=' + encodeURIComponent(JSON.stringify(tasks))).catch(()=>{});
 }
 
 async function deleteOrderFromGS(id) {
-  await fetch(GS_URL, {
-    method: 'POST',
-    body: JSON.stringify({action: 'deleteOrder', id})
-  });
+  gsGet('deleteOrder&id=' + id).catch(()=>{});
 }
 
 // ===================== LOCAL STORAGE PERSISTENCE =====================
@@ -1887,21 +1937,24 @@ const _origWorkToggle = workToggle;
 function submitOrder(e, editId) {
   _origSubmitOrder(e, editId);
   saveToLocalStorage();
-  // Save to Google Sheets
-  const order = DB.orders[DB.orders.length - 1] || DB.orders.find(o => o.id == editId);
+  const order = editId ? DB.orders.find(o=>o.id==editId) : DB.orders[DB.orders.length-1];
   if (order) saveOrderToGS(order);
 }
 function markPaid(id) {
   _origMarkPaid(id);
   saveToLocalStorage();
-  const order = DB.orders.find(o => o.id === id);
+  const order = DB.orders.find(o=>o.id===id);
   if (order) saveOrderToGS(order);
 }
 function workToggle(id, field, label) {
   _origWorkToggle(id, field, label);
   saveToLocalStorage();
-  const order = DB.orders.find(o => o.id === id);
+  const order = DB.orders.find(o=>o.id===id);
   if (order) saveOrderToGS(order);
+}
+function updateOrderStatus(id, status) {
+  const o = DB.orders.find(o=>o.id===id);
+  if (o) { o.status=status; toast('סטטוס עודכן'); saveOrderToGS(o); render(); }
 }
 
 // ===================== INIT =====================
