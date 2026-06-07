@@ -597,7 +597,7 @@ function render() {
     case 'dashboard':   content.innerHTML = renderDashboard(); break;
     case 'orders':      content.innerHTML = renderOrders(); break;
     case 'new-order':   content.innerHTML = renderOrderForm(); break;
-    case 'customers':   content.innerHTML = renderCustomers(); break;
+    case 'customers':   content.innerHTML = renderCustomers(); setTimeout(_renderCustPage, 0); break;
     case 'products':    content.innerHTML = renderProducts(); break;
     case 'collection':  content.innerHTML = renderCollection(); break;
     case 'work':        content.innerHTML = renderWork(); break;
@@ -1132,46 +1132,85 @@ function submitOrder(e, editId) {
 }
 
 // ===================== CUSTOMERS =====================
+let _custPage = 0;
+const CUST_PER_PAGE = 50;
+
 function renderCustomers() {
+  _custPage = 0;
   return `
   <div class="card">
     <div class="card-header">
-      <h2>👥 רשימת לקוחות</h2>
+      <h2>👥 לקוחות (${DB.customers.length.toLocaleString()})</h2>
       <button class="btn btn-primary btn-sm" onclick="showAddCustomer()">+ לקוח חדש</button>
     </div>
     <div class="search-bar">
-      <input type="text" id="cust-search" placeholder="🔍 חיפוש..." oninput="filterCustomers()">
+      <input type="text" id="cust-search" placeholder="🔍 חיפוש שם / עיר / טלפון..." oninput="filterCustomers()">
       <select id="cust-type-filter" onchange="filterCustomers()">
         <option value="all">כל הסוגים</option>
         <option value="private">פרטי</option>
         <option value="institutional">מוסדי</option>
       </select>
     </div>
-    <div class="table-wrap" id="cust-table-wrap">
-      ${renderCustomersTable(DB.customers)}
-    </div>
+    <div id="cust-table-wrap"></div>
+    <div id="cust-pagination" style="display:flex;gap:8px;justify-content:center;padding:14px;"></div>
   </div>`;
 }
 
-function renderCustomersTable(customers) {
-  return `<table>
-    <tr><th>שם</th><th>סוג</th><th>טלפון</th><th>נייד</th><th>עיר</th><th>הערות</th><th>הזמנות</th><th>פעולות</th></tr>
-    ${customers.map(c => {
-      const orders = DB.orders.filter(o => o.customerId === c.id).length;
-      return `<tr>
-        <td><strong>${escHtml(c.name)}</strong></td>
-        <td><span class="badge ${c.type==='institutional'?'badge-blue':'badge-green'}">${c.type==='institutional'?'מוסדי':'פרטי'}</span></td>
-        <td>${escHtml(c.phone)}</td>
-        <td>${escHtml(c.mobile)}</td>
-        <td>${escHtml(c.city)}</td>
-        <td>${escHtml(c.notes)}</td>
-        <td style="text-align:center">${orders}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="editCustomer(${c.id})">✏️</button>
-            <button class="btn btn-red btn-sm" onclick="deleteCustomer(${c.id})">🗑</button></td>
-      </tr>`;
-    }).join('')}
-  </table>`;
+function _getFilteredCustomers() {
+  const q = document.getElementById('cust-search')?.value?.toLowerCase() || '';
+  const type = document.getElementById('cust-type-filter')?.value || 'all';
+  let list = DB.customers;
+  if (type !== 'all') list = list.filter(c => c.type === type);
+  if (q) list = list.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    (c.phone||'').includes(q) ||
+    (c.city||'').toLowerCase().includes(q)
+  );
+  return list;
 }
+
+function filterCustomers() {
+  _custPage = 0;
+  _renderCustPage();
+}
+
+function _renderCustPage() {
+  const list = _getFilteredCustomers();
+  const total = list.length;
+  const pages = Math.ceil(total / CUST_PER_PAGE);
+  const page = _custPage;
+  const slice = list.slice(page * CUST_PER_PAGE, (page+1) * CUST_PER_PAGE);
+
+  const tableWrap = document.getElementById('cust-table-wrap');
+  const paginationEl = document.getElementById('cust-pagination');
+  if (!tableWrap) return;
+
+  tableWrap.innerHTML = `<p style="color:var(--text-muted);font-size:13px;padding:4px 0 10px">מציג ${slice.length} מתוך ${total.toLocaleString()} לקוחות</p>
+  <div class="table-wrap"><table>
+    <tr><th>שם</th><th>סוג</th><th>טלפון</th><th>עיר</th><th>הזמנות</th><th>פעולות</th></tr>
+    ${slice.map(c => `<tr>
+      <td><strong>${escHtml(c.name)}</strong></td>
+      <td><span class="badge ${c.type==='institutional'?'badge-blue':'badge-green'}">${c.type==='institutional'?'מוסדי':'פרטי'}</span></td>
+      <td>${escHtml(c.phone||'')}</td>
+      <td>${escHtml(c.city||'')}</td>
+      <td style="text-align:center">${c.orderCount||0}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="editCustomer(${c.id})">✏️</button>
+        <button class="btn btn-red btn-sm" onclick="deleteCustomer(${c.id})">🗑</button>
+      </td>
+    </tr>`).join('')}
+  </table></div>`;
+
+  if (paginationEl) {
+    let pg = '';
+    if (page > 0) pg += `<button class="btn btn-outline btn-sm" onclick="_custPage=${page-1};_renderCustPage()">◀ קודם</button>`;
+    pg += `<span style="padding:8px 12px;font-size:13px;color:var(--text-muted)">${page+1} / ${pages}</span>`;
+    if (page < pages-1) pg += `<button class="btn btn-outline btn-sm" onclick="_custPage=${page+1};_renderCustPage()">הבא ▶</button>`;
+    paginationEl.innerHTML = pg;
+  }
+}
+
+function renderCustomersTable(customers) { return ''; } // legacy stub
 
 function filterCustomers() {
   const q = document.getElementById('cust-search').value.toLowerCase();
