@@ -1687,6 +1687,66 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-page]') && window.innerWidth <= 768) closeSidebar();
 });
 
+// ===================== GOOGLE SHEETS API =====================
+const GS_URL = 'https://script.google.com/macros/s/AKfycbzKweXQA9eRNdTMb56R1ZcyCa16Tm9wppFEMpdk2SEHAIymQKThpugOybX4AvhIyeFt/exec';
+
+async function gsGet(action) {
+  try {
+    const r = await fetch(`${GS_URL}?action=${action}`);
+    return await r.json();
+  } catch(e) { console.warn('GS GET error:', e); return null; }
+}
+
+async function gsPost(action, data) {
+  try {
+    const r = await fetch(GS_URL, {
+      method: 'POST',
+      body: JSON.stringify({action, data})
+    });
+    return await r.json();
+  } catch(e) { console.warn('GS POST error:', e); return null; }
+}
+
+async function loadFromGoogleSheets() {
+  toast('⏳ טוען נתונים מ-Google Sheets...');
+  const orders = await gsGet('getOrders');
+  if (orders && Array.isArray(orders) && orders.length > 0) {
+    DB.orders = orders.map(o => ({
+      ...o,
+      id: parseInt(o.id) || o.id,
+      kafe: parseFloat(o.kafe)||0,
+      designPrice: parseFloat(o.designPrice)||0,
+      deliveryCost: parseFloat(o.deliveryCost)||0,
+      graphicsCost: parseFloat(o.graphicsCost)||0,
+      totalPrice: parseFloat(o.totalPrice)||0,
+      paymentDone: o.paymentDone === true || o.paymentDone === 'true' || o.paymentDone === 'TRUE',
+      colklarDone: o.colklarDone === 'true' || o.colklarDone === true,
+      fruitsDone: o.fruitsDone === 'true' || o.fruitsDone === true,
+      closeDone: o.closeDone === 'true' || o.closeDone === true,
+    }));
+    // Update nextId
+    const maxId = Math.max(...DB.orders.map(o => parseInt(o.id)||0), 1003);
+    DB.nextId = maxId + 1;
+    toast('✅ ' + orders.length + ' הזמנות נטענו מ-Google Sheets');
+    render();
+  } else {
+    toast('📋 אין הזמנות ב-Google Sheets עדיין');
+  }
+}
+
+async function saveOrderToGS(order) {
+  const result = await gsPost('saveOrder', order);
+  if (result?.ok) console.log('Order saved to GS:', order.orderNum);
+  else console.warn('GS save failed:', result);
+}
+
+async function deleteOrderFromGS(id) {
+  await fetch(GS_URL, {
+    method: 'POST',
+    body: JSON.stringify({action: 'deleteOrder', id})
+  });
+}
+
 // ===================== LOCAL STORAGE PERSISTENCE =====================
 const LS_KEY = 'izuv_bapri_data';
 
@@ -1722,13 +1782,36 @@ const _origSaveCustomer = saveCustomer;
 const _origDeleteCustomer = deleteCustomer;
 const _origWorkToggle = workToggle;
 
-function submitOrder(e, editId) { _origSubmitOrder(e, editId); saveToLocalStorage(); }
-function markPaid(id) { _origMarkPaid(id); saveToLocalStorage(); }
-function workToggle(id, field, label) { _origWorkToggle(id, field, label); saveToLocalStorage(); }
+function submitOrder(e, editId) {
+  _origSubmitOrder(e, editId);
+  saveToLocalStorage();
+  // Save to Google Sheets
+  const order = DB.orders[DB.orders.length - 1] || DB.orders.find(o => o.id == editId);
+  if (order) saveOrderToGS(order);
+}
+function markPaid(id) {
+  _origMarkPaid(id);
+  saveToLocalStorage();
+  const order = DB.orders.find(o => o.id === id);
+  if (order) saveOrderToGS(order);
+}
+function workToggle(id, field, label) {
+  _origWorkToggle(id, field, label);
+  saveToLocalStorage();
+  const order = DB.orders.find(o => o.id === id);
+  if (order) saveOrderToGS(order);
+}
 
 // ===================== INIT =====================
 document.getElementById('logo-img').src = LOGO_SRC;
 loadFromLocalStorage();
+// Add Google Sheets sync button to topbar
+document.getElementById('topbar-actions').innerHTML +=
+  `<button class="btn btn-outline btn-sm" onclick="loadFromGoogleSheets()" title="טען הזמנות מ-Google Sheets">
+    🔄 סנכרן
+  </button>`;
+// Auto-load from Google Sheets on startup
+loadFromGoogleSheets();
 render();
 </script>
 </body>
