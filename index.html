@@ -1787,15 +1787,41 @@ async function gsGet(action) {
   return null;
 }
 
-// Save — use Image tag (works cross-origin, no CORS needed, fire & forget)
+// Save via hidden form POST — most reliable cross-origin method
 function gsSave(action, data) {
-  const encoded = encodeURIComponent(JSON.stringify(data));
-  const url = `${GS_URL}?action=${action}&data=${encoded}`;
-  // Image tag fires GET request without CORS issues
-  const img = new Image();
-  img.src = url;
-  // Also try no-cors fetch as backup
-  fetch(url, {mode:'no-cors', cache:'no-store'}).catch(()=>{});
+  try {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = GS_URL;
+    form.target = '_gsframe'; // post to hidden iframe, no page navigation
+    form.style.display = 'none';
+
+    const addField = (name, val) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = val;
+      form.appendChild(input);
+    };
+
+    addField('action', action);
+    addField('data', JSON.stringify(data));
+
+    // Create hidden iframe if not exists
+    if (!document.getElementById('_gsframe')) {
+      const iframe = document.createElement('iframe');
+      iframe.name = '_gsframe';
+      iframe.id = '_gsframe';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => form.remove(), 3000);
+  } catch(e) {
+    console.warn('gsSave error:', e);
+  }
 }
 
 async function gsPost(action, data) { return gsGet(action + '&data=' + encodeURIComponent(JSON.stringify(data))); }
