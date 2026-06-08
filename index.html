@@ -845,7 +845,7 @@ function showOrderDetails(id) {
         <p><strong>הערות:</strong> ${escHtml(o.notes) || '—'}</p>
         <p><strong>ברכה:</strong> ${escHtml(o.blessing) || '—'}</p>
         <p><strong>קאפה:</strong> ${escHtml(o.kafeType) || '—'}${o.kafe?` (₪${o.kafe})`:''}</p>
-        <p><strong>כשרות:</strong> ${escHtml(o.kashrut) || '—'}</p>
+        <p><strong>מוצרים באריזה:</strong> ${escHtml(o.kashrut) || '—'}</p>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px;">
@@ -1005,6 +1005,12 @@ function renderOrderForm(editId) {
           <select name="productId" onchange="updateProductPrice(this)" required>
             <option value="">— בחר מוצר —</option>
             ${DB.products.map(p => `<option value="${p.id}" data-price="${p.price}" ${v('productId')==p.id?'selected':''}>${escHtml(p.name)} — ₪${p.price}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>מוצרים באריזה</label>
+          <select name="kashrut">
+            <option value="פרווה" ${v('kashrut','פרווה')==='פרווה'?'selected':''}>פרווה</option>
+            <option value="חלבי" ${v('kashrut')==='חלבי'?'selected':''}>חלבי</option>
           </select>
         </div>
         <div class="field"><label>הערות</label><input type="text" name="notes" value="${v('notes')}"></div>
@@ -1186,7 +1192,7 @@ function printOrderForm(id) {
     + '<div class="row"><span class="key">מוצר:</span><span class="val">' + (o.productName||'') + '</span></div>'
     + '<div class="row"><span class="key">ברכה:</span><span class="val">' + (o.blessing||'—') + '</span></div>'
     + '<div class="row"><span class="key">הערות:</span><span class="val">' + (o.notes||'—') + '</span></div>'
-    + '<div class="row"><span class="key">כשרות:</span><span class="val">' + (o.kashrut||'—') + '</span></div>'
+    + '<div class="row"><span class="key">מוצרים באריזה:</span><span class="val">' + (o.kashrut||'—') + '</span></div>'
     + '<div class="row"><span class="key">קאפה:</span><span class="val">' + (o.kafeType||'—') + (o.kafe?' (₪'+o.kafe+')':'') + '</span></div>'
     + '<h3>💰 תשלום</h3>'
     + '<div class="row"><span class="key">מחיר עיצוב:</span><span class="val">₪' + (o.designPrice||0) + '</span></div>'
@@ -1230,7 +1236,7 @@ function printOrderAndDelivery(id) {
     <div class="row"><span class="key">לקוח</span><span class="val">${esc(o.customerName)} — ${esc(o.phone || o.mobile)}</span></div>
     <h2>פרטי ההזמנה</h2>
     <div class="row"><span class="key">מוצר</span><span class="val big">${esc(o.productName)}</span></div>
-    <div class="row"><span class="key">כשרות</span><span class="val"><span class="badge">${esc(o.kashrut || 'פרווה')}</span></span></div>
+    <div class="row"><span class="key">מוצרים באריזה</span><span class="val"><span class="badge">${esc(o.kashrut || 'פרווה')}</span></span></div>
     <div class="row"><span class="key">קאפה / הדפסה</span><span class="val">${esc(o.kafeType || '—')}</span></div>
     <div class="row"><span class="key">ברכה</span><span class="val">${esc(o.blessing || '—')}</span></div>
     <div class="row"><span class="key">הערות</span><span class="val">${esc(o.notes || '—')}</span></div>
@@ -1317,7 +1323,7 @@ function submitOrder(e, editId) {
   // שדות חדשים
   const extraFields = {
     kafeType,
-    kashrut: product ? (product.kashrut || '') : '',  // כשרות נקבעת לפי המוצר
+    kashrut: get('kashrut'),  // "מוצרים באריזה" — פרווה/חלבי, נבחר בכל הזמנה
     destType: get('destType'),
     venueName: get('venueName'),
     room: get('room'),
@@ -1548,11 +1554,10 @@ function renderProducts() {
     </div>
     <div class="table-wrap">
       <table>
-        <tr><th>שם</th><th>תכולה</th><th>כשרות</th><th>אורך</th><th>רוחב</th><th>משקל</th><th>מחיר</th><th>פעולות</th></tr>
+        <tr><th>שם</th><th>תכולה</th><th>אורך</th><th>רוחב</th><th>משקל</th><th>מחיר</th><th>פעולות</th></tr>
         ${DB.products.map(p => `<tr>
           <td><strong>${escHtml(p.name)}</strong></td>
           <td>${escHtml(p.content)}</td>
-          <td><span class="badge ${p.kashrut==='חלבי'?'badge-blue':'badge-green'}">${escHtml(p.kashrut||'פרווה')}</span></td>
           <td>${p.length} ס"מ</td>
           <td>${p.width} ס"מ</td>
           <td>${p.weight} ק"ג</td>
@@ -1583,12 +1588,6 @@ function showAddProduct(id) {
         <div class="field"><label>רוחב (ס"מ)</label><input type="number" name="width" value="${v('width',0)}"></div>
         <div class="field"><label>משקל (ק"ג)</label><input type="number" step="0.1" name="weight" value="${v('weight',0)}"></div>
         <div class="field"><label>מחיר ₪ *</label><input type="number" name="price" value="${v('price',0)}" required></div>
-        <div class="field"><label>כשרות</label>
-          <select name="kashrut">
-            <option value="פרווה" ${v('kashrut','פרווה')==='פרווה'?'selected':''}>פרווה</option>
-            <option value="חלבי" ${v('kashrut')==='חלבי'?'selected':''}>חלבי</option>
-          </select>
-        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeModal()">ביטול</button>
@@ -1603,7 +1602,7 @@ function editProduct(id) { showAddProduct(id); }
 function saveProduct(e, id) {
   e.preventDefault();
   const fd = new FormData(e.target);
-  const data = { name: fd.get('name'), content: fd.get('content'), length: parseFloat(fd.get('length'))||0, width: parseFloat(fd.get('width'))||0, weight: parseFloat(fd.get('weight'))||0, price: parseFloat(fd.get('price'))||0, kashrut: fd.get('kashrut')||'פרווה' };
+  const data = { name: fd.get('name'), content: fd.get('content'), length: parseFloat(fd.get('length'))||0, width: parseFloat(fd.get('width'))||0, weight: parseFloat(fd.get('weight'))||0, price: parseFloat(fd.get('price'))||0 };
   let saved;
   if (id) {
     const idx = DB.products.findIndex(p => p.id === id);
