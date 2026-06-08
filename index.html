@@ -566,7 +566,8 @@ function render() {
     default:            content.innerHTML = '<p>עמוד לא נמצא</p>';
   }
   bindEvents();
-  if (document.getElementById('f-destType')) toggleDest();
+  const _dt = document.getElementById('f-destType');
+  if (_dt) setDest(_dt.value || 'home');
 }
 
 // ===================== HISTORICAL DATA (Google Sheets) =====================
@@ -860,15 +861,13 @@ function showOrderDetails(id) {
       </div>
       <div>
         <div class="section-title" style="margin-top:0">פרטי משלוח</div>
-        <p><strong>סוג יעד:</strong> ${escHtml(o.destType) || 'בית'}${o.venueName?` — ${escHtml(o.venueName)}`:''}${o.room?` (חדר ${escHtml(o.room)})`:''}</p>
+        <p><strong>יעד:</strong> ${destLabel(o)}</p>
+        <p><strong>כתובת:</strong> ${escHtml(destSummary(o))}</p>
         ${o.saveForEnd?`<p style="color:#B89A28;font-weight:700">⏳ לשמור לסוף האירוע</p>`:''}
         ${o.setupAtEvent?`<p style="color:#B89A28;font-weight:700">🏗 סגירה/הקמה באירוע</p>`:''}
-        <p><strong>למשפחת:</strong> ${escHtml(o.deliveryTo)}</p>
-        <p><strong>כתובת:</strong> ${escHtml(o.address)}, כניסה ${escHtml(o.entrance)}, קומה ${escHtml(o.floor)}, דירה ${escHtml(o.apt)}</p>
-        <p><strong>שכונה:</strong> ${escHtml(o.neighborhood)}</p>
-        <p><strong>שם מקבל:</strong> ${escHtml(o.receiverName)}</p>
-        <p><strong>טלפון מקבל:</strong> ${escHtml(o.receiverPhone)}</p>
-        <p><strong>הערות למשלוחן:</strong> ${escHtml(o.deliveryNotes) || '—'}</p>
+        ${o.receiverName?`<p><strong>שם מקבל:</strong> ${escHtml(o.receiverName)}</p>`:''}
+        <p><strong>טלפון מקבל:</strong> ${escHtml(o.receiverPhone)}${o.extraPhone?` / ${escHtml(o.extraPhone)}`:''}</p>
+        <p><strong>הערות למשלוח:</strong> ${escHtml(o.deliveryNotes) || '—'}</p>
       </div>
     </div>
     <div class="modal-footer">
@@ -951,6 +950,8 @@ function editOrder(id) {
   document.getElementById('topbar-actions').innerHTML = '';
   document.getElementById('content').innerHTML = renderOrderForm(id);
   bindEvents();
+  const _dt = document.getElementById('f-destType');
+  if (_dt) setDest(_dt.value || 'home');
   window.scrollTo(0, 0);
 }
 
@@ -1002,13 +1003,6 @@ function renderOrderForm(editId) {
         </div>
         <div class="field"><label>הערות</label><input type="text" name="notes" value="${v('notes')}"></div>
         <div class="field"><label>ברכה</label><input type="text" name="blessing" value="${v('blessing')}" placeholder="טקסט הברכה"></div>
-        <div class="field"><label>כשרות</label>
-          <select name="kashrut">
-            <option value="" ${!v('kashrut')?'selected':''}>— בחר —</option>
-            <option value="פרווה" ${v('kashrut')==='פרווה'?'selected':''}>פרווה</option>
-            <option value="חלבי" ${v('kashrut')==='חלבי'?'selected':''}>חלבי</option>
-          </select>
-        </div>
 
         <div class="section-title">💰 תשלום</div>
         <div class="field"><label>מחיר עיצוב ₪</label><input type="number" name="designPrice" id="f-designPrice" value="${v('designPrice',0)}" oninput="calcTotal()"></div>
@@ -1043,16 +1037,53 @@ function renderOrderForm(editId) {
           </div>
         </div>
 
-        <div class="section-title">🎪 יעד ופרטי אירוע</div>
-        <div class="field"><label>סוג יעד</label>
-          <select name="destType" id="f-destType" onchange="toggleDest()">
-            <option value="בית" ${v('destType','בית')==='בית'?'selected':''}>בית פרטי</option>
-            <option value="מלון" ${v('destType')==='מלון'?'selected':''}>מלון</option>
-            <option value="אולם" ${v('destType')==='אולם'?'selected':''}>אולם</option>
-          </select>
+        <div class="section-title">🚚 יעד ומשלוח</div>
+        <div class="field" style="grid-column:1/-1">
+          <div id="dest-tabs" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-sm dest-btn" data-dest="pickup" onclick="setDest('pickup')">איסוף עצמי</button>
+            <button type="button" class="btn btn-outline btn-sm dest-btn" data-dest="home" onclick="setDest('home')">משלוח לבית</button>
+            <button type="button" class="btn btn-outline btn-sm dest-btn" data-dest="hotel" onclick="setDest('hotel')">משלוח למלון</button>
+            <button type="button" class="btn btn-outline btn-sm dest-btn" data-dest="hospital" onclick="setDest('hospital')">משלוח לבית חולים</button>
+            <button type="button" class="btn btn-outline btn-sm dest-btn" data-dest="hall" onclick="setDest('hall')">משלוח לאולם</button>
+          </div>
+          <input type="hidden" name="destType" id="f-destType" value="${v('destType','home')}">
         </div>
-        <div class="field" id="venue-name-field"><label>שם המלון / האולם</label><input type="text" name="venueName" value="${v('venueName')}"></div>
-        <div class="field" id="venue-room-field"><label>מספר חדר (במלון)</label><input type="text" name="room" value="${v('room')}"></div>
+
+        <!-- איסוף עצמי -->
+        <div class="dest-group" data-dest="pickup" style="display:none">
+          <p style="grid-column:1/-1;color:var(--text-muted);margin:4px 0">🏠 הלקוח אוסף עצמאית מהחנות — אין צורך בפרטי כתובת.</p>
+        </div>
+        <!-- משלוח לבית -->
+        <div class="dest-group" data-dest="home" style="display:none">
+          <div class="field"><label>רחוב</label><input type="text" name="address" value="${v('address')}"></div>
+          <div class="field"><label>מספר בית</label><input type="text" name="houseNum" value="${v('houseNum')}"></div>
+          <div class="field"><label>דירה</label><input type="text" name="apt" value="${v('apt')}"></div>
+          <div class="field"><label>כניסה</label><input type="text" name="entrance" value="${v('entrance')}"></div>
+        </div>
+        <!-- משלוח למלון -->
+        <div class="dest-group" data-dest="hotel" style="display:none">
+          <div class="field"><label>רחוב</label><input type="text" name="address" value="${v('address')}"></div>
+          <div class="field"><label>מספר בית</label><input type="text" name="houseNum" value="${v('houseNum')}"></div>
+          <div class="field"><label>שם המלון</label><input type="text" name="venueName" value="${v('venueName')}"></div>
+          <div class="field"><label>קומה</label><input type="text" name="floor" value="${v('floor')}"></div>
+          <div class="field"><label>חדר</label><input type="text" name="room" value="${v('room')}"></div>
+        </div>
+        <!-- משלוח לבית חולים -->
+        <div class="dest-group" data-dest="hospital" style="display:none">
+          <div class="field"><label>שם בית החולים</label><input type="text" name="venueName" value="${v('venueName')}"></div>
+          <div class="field"><label>מחלקה</label><input type="text" name="department" value="${v('department')}"></div>
+          <div class="field"><label>קומה</label><input type="text" name="floor" value="${v('floor')}"></div>
+          <div class="field"><label>חדר</label><input type="text" name="room" value="${v('room')}"></div>
+        </div>
+        <!-- משלוח לאולם -->
+        <div class="dest-group" data-dest="hall" style="display:none">
+          <div class="field"><label>שם האולם</label><input type="text" name="venueName" value="${v('venueName')}"></div>
+          <div class="field"><label>רחוב</label><input type="text" name="address" value="${v('address')}"></div>
+        </div>
+
+        <div class="field"><label>טלפון המקבל</label><input type="tel" name="receiverPhone" value="${v('receiverPhone')}"></div>
+        <div class="field"><label>טלפון נוסף</label><input type="tel" name="extraPhone" value="${v('extraPhone')}"></div>
+        <div class="field"><label>שם המקבל (אם שונה)</label><input type="text" name="receiverName" value="${v('receiverName')}"></div>
         <div class="field"><label>לשמור לסוף האירוע?</label>
           <select name="saveForEnd">
             <option value="0" ${!v('saveForEnd')?'selected':''}>לא</option>
@@ -1065,21 +1096,7 @@ function renderOrderForm(editId) {
             <option value="1" ${v('setupAtEvent')?'selected':''}>כן — המשלוחן מקים באירוע (הזמנה גדולה)</option>
           </select>
         </div>
-
-        <div class="section-title">📦 תעודת משלוח</div>
-        <div class="field"><label>למשפחת</label><input type="text" name="deliveryTo" value="${v('deliveryTo')}"></div>
-        <div class="field"><label>כתובת</label><input type="text" name="address" value="${v('address')}"></div>
-        <div class="field"><label>כניסה</label><input type="text" name="entrance" value="${v('entrance')}"></div>
-        <div class="field"><label>קומה</label><input type="text" name="floor" value="${v('floor')}"></div>
-        <div class="field"><label>דירה</label><input type="text" name="apt" value="${v('apt')}"></div>
-        <div class="field"><label>שכונה</label><input type="text" name="neighborhood" value="${v('neighborhood')}"></div>
-        <div class="field"><label>שם השולח</label><input type="text" name="senderName" value="${v('senderName')}"></div>
-        <div class="field"><label>טלפון שולח</label><input type="tel" name="senderPhone" value="${v('senderPhone')}"></div>
-        <div class="field"><label>נייד שולח</label><input type="tel" name="senderMobile" value="${v('senderMobile')}"></div>
-        <div class="field"><label>שם המקבל</label><input type="text" name="receiverName" value="${v('receiverName')}"></div>
-        <div class="field"><label>טלפון מקבל</label><input type="tel" name="receiverPhone" value="${v('receiverPhone')}"></div>
-        <div class="field"><label>נייד מקבל</label><input type="tel" name="receiverMobile" value="${v('receiverMobile')}"></div>
-        <div class="field" style="grid-column:1/-1"><label>הערות למשלוחן</label><textarea name="deliveryNotes">${v('deliveryNotes')}</textarea></div>
+        <div class="field" style="grid-column:1/-1"><label>הערות למשלוח</label><textarea name="deliveryNotes">${v('deliveryNotes')}</textarea></div>
       </div>
 
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);flex-wrap:wrap;">
@@ -1170,13 +1187,12 @@ function printOrderForm(id) {
     + '<div class="row"><span class="key">אמצעי תשלום:</span><span class="val">' + (o.paymentMethod||'') + '</span></div>'
     + '<div class="total">סה"כ לתשלום: ₪' + (o.totalPrice||0).toLocaleString() + '</div>'
     + '<h3>📦 פרטי משלוח</h3>'
-    + '<div class="row"><span class="key">סוג יעד:</span><span class="val">' + (o.destType||'בית') + (o.venueName?' — '+o.venueName:'') + (o.room?' (חדר '+o.room+')':'') + '</span></div>'
+    + '<div class="row"><span class="key">יעד:</span><span class="val">' + destLabel(o) + '</span></div>'
+    + '<div class="row"><span class="key">כתובת:</span><span class="val">' + destSummary(o) + '</span></div>'
     + (o.saveForEnd ? '<div class="row"><span class="key">⏳ הערה:</span><span class="val">לשמור לסוף האירוע</span></div>' : '')
     + (o.setupAtEvent ? '<div class="row"><span class="key">🏗 הערה:</span><span class="val">סגירה/הקמה באירוע</span></div>' : '')
-    + '<div class="row"><span class="key">למשפחת:</span><span class="val">' + (o.deliveryTo||'') + '</span></div>'
-    + '<div class="row"><span class="key">כתובת:</span><span class="val">' + (o.address||'') + (o.entrance?' כניסה '+o.entrance:'') + (o.floor?' קומה '+o.floor:'') + (o.apt?' דירה '+o.apt:'') + '</span></div>'
-    + '<div class="row"><span class="key">שם מקבל:</span><span class="val">' + (o.receiverName||'') + '</span></div>'
-    + '<div class="row"><span class="key">טלפון מקבל:</span><span class="val">' + (o.receiverPhone||'') + '</span></div>'
+    + (o.receiverName ? '<div class="row"><span class="key">שם מקבל:</span><span class="val">' + o.receiverName + '</span></div>' : '')
+    + '<div class="row"><span class="key">טלפון מקבל:</span><span class="val">' + (o.receiverPhone||'') + (o.extraPhone?' / '+o.extraPhone:'') + '</span></div>'
     + (o.deliveryNotes ? '<div class="row"><span class="key">הערות:</span><span class="val">' + o.deliveryNotes + '</span></div>' : '')
     + '<br><div class="no-print" style="text-align:center"><button onclick="window.print()" style="padding:12px 30px;background:#3E5C1A;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer">🖨 הדפס</button></div>'
     + '<scr' + 'ipt>window.print();</scr' + 'ipt></body></html>');
@@ -1199,16 +1215,35 @@ function calcTotal() {
   if (t) t.textContent = total;
 }
 
-// הצגה/הסתרה של שדות יעד לפי סוג היעד (בית / מלון / אולם)
-function toggleDest() {
-  const t = document.getElementById('f-destType');
-  if (!t) return;
-  const isHome  = t.value === 'בית';
-  const isHotel = t.value === 'מלון';
-  const nameF = document.getElementById('venue-name-field');
-  const roomF = document.getElementById('venue-room-field');
-  if (nameF) nameF.style.display = isHome ? 'none' : '';
-  if (roomF) roomF.style.display = isHotel ? '' : 'none';
+// בחירת יעד המשלוח — מציג את שדות היעד הנבחר ומבטל (disable) את השאר
+// כך שרק שדות היעד הפעיל נשלחים בטופס (אין התנגשות שמות).
+function setDest(type) {
+  type = type || 'home';
+  const h = document.getElementById('f-destType');
+  if (h) h.value = type;
+  document.querySelectorAll('.dest-btn').forEach(b => {
+    const on = b.dataset.dest === type;
+    b.classList.toggle('btn-primary', on);
+    b.classList.toggle('btn-outline', !on);
+  });
+  document.querySelectorAll('.dest-group').forEach(g => {
+    const on = g.dataset.dest === type;
+    g.style.display = on ? 'contents' : 'none';
+    g.querySelectorAll('input,select,textarea').forEach(el => { el.disabled = !on; });
+  });
+}
+
+// תוויות וסיכום יעד המשלוח (לתצוגה ולהדפסה)
+const DEST_LABELS = {pickup:'איסוף עצמי', home:'משלוח לבית', hotel:'משלוח למלון', hospital:'משלוח לבית חולים', hall:'משלוח לאולם'};
+function destLabel(o) { return DEST_LABELS[o.destType] || 'משלוח לבית'; }
+function destSummary(o) {
+  const t = o.destType || 'home';
+  const city = o.city || '';
+  if (t === 'pickup')   return 'איסוף עצמי מהחנות';
+  if (t === 'hotel')    return `מלון ${o.venueName||''}${o.address?', '+o.address:''}${o.houseNum?' '+o.houseNum:''}${o.floor?', קומה '+o.floor:''}${o.room?', חדר '+o.room:''}${city?', '+city:''}`;
+  if (t === 'hospital') return `${o.venueName||''}${o.department?', מחלקה '+o.department:''}${o.floor?', קומה '+o.floor:''}${o.room?', חדר '+o.room:''}${city?', '+city:''}`;
+  if (t === 'hall')     return `${o.venueName||''}${o.address?', '+o.address:''}${city?', '+city:''}`;
+  return `${o.address||''}${o.houseNum?' '+o.houseNum:''}${o.apt?', דירה '+o.apt:''}${o.entrance?', כניסה '+o.entrance:''}${city?', '+city:''}`;
 }
 
 function submitOrder(e, editId) {
@@ -1227,10 +1262,14 @@ function submitOrder(e, editId) {
   // שדות חדשים
   const extraFields = {
     kafeType,
-    kashrut: get('kashrut'),
+    kashrut: product ? (product.kashrut || '') : '',  // כשרות נקבעת לפי המוצר
     destType: get('destType'),
     venueName: get('venueName'),
     room: get('room'),
+    floor: get('floor'),
+    department: get('department'),
+    houseNum: get('houseNum'),
+    extraPhone: get('extraPhone'),
     saveForEnd: get('saveForEnd') === '1',
     setupAtEvent: get('setupAtEvent') === '1',
   };
@@ -1488,6 +1527,12 @@ function showAddProduct(id) {
         <div class="field"><label>רוחב (ס"מ)</label><input type="number" name="width" value="${v('width',0)}"></div>
         <div class="field"><label>משקל (ק"ג)</label><input type="number" step="0.1" name="weight" value="${v('weight',0)}"></div>
         <div class="field"><label>מחיר ₪ *</label><input type="number" name="price" value="${v('price',0)}" required></div>
+        <div class="field"><label>כשרות</label>
+          <select name="kashrut">
+            <option value="פרווה" ${v('kashrut','פרווה')==='פרווה'?'selected':''}>פרווה</option>
+            <option value="חלבי" ${v('kashrut')==='חלבי'?'selected':''}>חלבי</option>
+          </select>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeModal()">ביטול</button>
@@ -1502,7 +1547,7 @@ function editProduct(id) { showAddProduct(id); }
 function saveProduct(e, id) {
   e.preventDefault();
   const fd = new FormData(e.target);
-  const data = { name: fd.get('name'), content: fd.get('content'), length: parseFloat(fd.get('length'))||0, width: parseFloat(fd.get('width'))||0, weight: parseFloat(fd.get('weight'))||0, price: parseFloat(fd.get('price'))||0 };
+  const data = { name: fd.get('name'), content: fd.get('content'), length: parseFloat(fd.get('length'))||0, width: parseFloat(fd.get('width'))||0, weight: parseFloat(fd.get('weight'))||0, price: parseFloat(fd.get('price'))||0, kashrut: fd.get('kashrut')||'פרווה' };
   let saved;
   if (id) {
     const idx = DB.products.findIndex(p => p.id === id);
