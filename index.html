@@ -521,9 +521,58 @@ function escHtml(s) {
 // ===================== LOGO =====================
 // Logo stored as data URL (user's logo)
 const LOGO_SRC = 'img_Im0.png';
-let currentPage = 'dashboard';
+// ===================== הרשאות (תפקידים) =====================
+// סיסמת מנהל — אפשר לשנות כאן בכל עת:
+const ADMIN_PASSWORD = 'izuv2026';
+// העמודים שהמזכירה רואה (מנהל רואה הכל):
+const SECRETARY_PAGES = ['orders','new-order','customers','work'];
+let userRole = localStorage.getItem('izuv_role') || 'secretary';
+
+function canSee(page) { return userRole === 'admin' || SECRETARY_PAGES.indexOf(page) !== -1; }
+
+function applyRoleToNav() {
+  document.querySelectorAll('#nav a').forEach(a => {
+    a.style.display = canSee(a.dataset.page) ? '' : 'none';
+  });
+}
+
+function renderTopbar() {
+  const ta = document.getElementById('topbar-actions');
+  if (!ta) return;
+  let html = `<button class="btn btn-outline btn-sm" onclick="loadFromGoogleSheets()" title="טען מ-Google Sheets">🔄 סנכרן</button>`;
+  if (userRole === 'admin')
+    html += ` <button class="btn btn-outline btn-sm" onclick="exitAdmin()">👤 יציאה ממצב מנהל</button>`;
+  else
+    html += ` <button class="btn btn-gold btn-sm" onclick="adminLogin()">🔑 כניסת מנהל</button>`;
+  ta.innerHTML = html;
+}
+
+function adminLogin() {
+  const p = prompt('סיסמת מנהל:');
+  if (p === null) return;
+  if (p === ADMIN_PASSWORD) {
+    userRole = 'admin';
+    localStorage.setItem('izuv_role', 'admin');
+    toast('כניסת מנהל ✅');
+    applyRoleToNav();
+    navigate('dashboard');
+  } else {
+    toast('סיסמה שגויה ❌');
+  }
+}
+
+function exitAdmin() {
+  userRole = 'secretary';
+  localStorage.setItem('izuv_role', 'secretary');
+  toast('מצב מזכירה');
+  applyRoleToNav();
+  navigate('orders');
+}
+
+let currentPage = (userRole === 'admin') ? 'dashboard' : 'orders';
 
 function navigate(page) {
+  if (!canSee(page)) page = 'orders';  // מזכירה לא יכולה להגיע לעמודים מוגבלים
   currentPage = page;
   document.querySelectorAll('#nav a').forEach(a => {
     a.classList.toggle('active', a.dataset.page === page);
@@ -549,8 +598,9 @@ function render() {
     collection: 'ניהול גביה',
     work: 'מסך ניהול עבודה',
   };
+  if (!canSee(currentPage)) currentPage = 'orders';  // אכיפת הרשאות
+  applyRoleToNav();
   document.getElementById('page-title').textContent = titles[currentPage] || '';
-  document.getElementById('topbar-actions').innerHTML = '';
 
   const content = document.getElementById('content');
   switch (currentPage) {
@@ -566,6 +616,7 @@ function render() {
     default:            content.innerHTML = '<p>עמוד לא נמצא</p>';
   }
   bindEvents();
+  renderTopbar();
   const _dt = document.getElementById('f-destType');
   if (_dt) setDest(_dt.value || 'home');
 }
@@ -2149,14 +2200,10 @@ function updateOrderStatus(id, status) {
 // ===================== INIT =====================
 document.getElementById('logo-img').src = LOGO_SRC;
 loadFromLocalStorage();
-// Add Google Sheets sync button to topbar
-document.getElementById('topbar-actions').innerHTML +=
-  `<button class="btn btn-outline btn-sm" onclick="loadFromGoogleSheets()" title="טען הזמנות מ-Google Sheets">
-    🔄 סנכרן
-  </button>`;
+applyRoleToNav();           // הסתרת עמודים לפי תפקיד
 // Auto-load from Google Sheets on startup
 loadFromGoogleSheets();
-render();
+navigate(currentPage);      // קובע עמוד התחלתי + מסמן בתפריט + מצייר טופבר
 </script>
 </body>
 </html>
