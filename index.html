@@ -931,6 +931,12 @@ function printLabel() {
 }
 
 // ===================== ORDER FORM =====================
+// רשימת ערים בישראל (לחיפה/בחירה; השדה מאפשר גם הקלדה חופשית)
+const IL_CITIES = ["ירושלים","תל אביב-יפו","חיפה","ראשון לציון","פתח תקווה","אשדוד","נתניה","באר שבע","בני ברק","חולון","רמת גן","אשקלון","רחובות","בת ים","בית שמש","כפר סבא","הרצליה","חדרה","מודיעין-מכבים-רעות","נצרת","לוד","רמלה","רעננה","מודיעין עילית","רהט","הוד השרון","גבעתיים","קריית אתא","נהריה","ביתר עילית","אום אל-פחם","קריית גת","אילת","ראש העין","עפולה","נס ציונה","עכו","אלעד","רמת השרון","כרמיאל","יבנה","טבריה","טייבה","קריית מוצקין","קריית ביאליק","קריית אונו","קריית ים","מעלה אדומים","אור יהודה","צפת","דימונה","טמרה","נתיבות","סח'נין","אופקים","גבעת שמואל","יהוד-מונוסון","שפרעם","קריית שמונה","טירה","אריאל","מגדל העמק","שדרות","טירת כרמל","נשר","ערד","קלנסווה","כפר קאסם","יקנעם עילית","בית שאן","אור עקיבא","נוף הגליל","גבעת זאב","מבשרת ציון","גן יבנה","קריית עקרון","פרדס חנה-כרכור","זכרון יעקב","בנימינה-גבעת עדה","כפר יונה","אבן יהודה","קדימה-צורן","תל מונד","רמת ישי","עומר","מיתר","להבים","כוכב יאיר-צור יגאל","שוהם","גדרה","מזכרת בתיה","קריית מלאכי","בית דגן","אזור","סביון","גני תקווה","קריית טבעון","אבו גוש","מעלות-תרשיחא","ראש פינה","ראש העין","קצרין","כפר ורדים","שלומי","מטולה","יבנאל","כפר תבור","חצור הגלילית","כפר יאסיף","פוריה","עוספיא","דאלית אל-כרמל","ערערה","עראבה","דיר חנא","מג'ד אל-כרום","משהד","כפר כנא","ריינה","יפיע","עין מאהל","כפר מנדא","ירכא","אבו סנאן","כסרא-סמיע","חורפיש","בית ג'ן","מג'אר","ראמה","נחף","ג'וליס","מזרעה","פקיעין","סאג'ור","אכסאל","דבוריה","כפר חב\"ד","אבן יהודה","יסוד המעלה","מגדל","באר יעקב","קריית עקרון","גני תקווה","חריש","להבים","רכסים","פרדסיה","עתלית","בנימינה","עין שמר","נירים","שדה בוקר","מצפה רמון","ירוחם","להבים","עומר","תל שבע","חורה","כסייפה","ערערה בנגב","שגב שלום","לקיה"];
+
+// רשימת בתי חולים בישראל (לחיפה/בחירה; מאפשר גם הקלדה חופשית)
+const IL_HOSPITALS = ["שיבא תל השומר (רמת גן)","איכילוב - סוראסקי (תל אביב)","הדסה עין כרם (ירושלים)","הדסה הר הצופים (ירושלים)","שערי צדק (ירושלים)","ביקור חולים (ירושלים)","הרצוג (ירושלים)","רמב\"ם (חיפה)","בני ציון (חיפה)","כרמל (חיפה)","אלישע (חיפה)","רבין - בילינסון (פתח תקווה)","רבין - השרון (פתח תקווה)","שניידר לילדים (פתח תקווה)","מאיר (כפר סבא)","לניאדו (נתניה)","מעייני הישועה (בני ברק)","וולפסון (חולון)","שמיר - אסף הרופא (באר יעקב)","קפלן (רחובות)","ברזילי (אשקלון)","סורוקה (באר שבע)","יוספטל (אילת)","הלל יפה (חדרה)","העמק (עפולה)","רבקה זיו (צפת)","פוריה - ברוך פדה (טבריה)","הגליל המערבי (נהריה)","אסותא אשדוד","אסותא תל אביב","אסותא רמת החייל","אסותא חיפה","מדיקל סנטר אסותא","המרכז הרפואי לבריאות הנפש","מ\"ר ע\"ש ברוך פדה","ביה\"ח אנגליקני נצרת","ביה\"ח הצרפתי נצרת (סן וינסנט)","ביה\"ח האיטלקי נצרת","מרכז שלוותה (הוד השרון)","מרכז גהה (פתח תקווה)","מרכז אברבנאל (בת ים)","מעלה הכרמל","פלימן (חיפה)","דורות (נתניה)","שוהם (פרדס חנה)"];
+
 // קאפה / הדפסה — אפשרויות קבועות עם מחיר
 const KAFE_OPTIONS = [
   {label:'הדפסה רגילה צבעוני (ללא עלות)', price:0},
@@ -968,7 +974,7 @@ function renderOrderForm(editId) {
         <div class="section-title">📅 פרטי משלוח</div>
         <div class="field"><label>תאריך למשלוח *</label><input type="date" name="deliveryDate" value="${v('deliveryDate')}" required></div>
         <div class="field"><label>שעה</label><input type="time" name="deliveryTime" value="${v('deliveryTime','10:00')}"></div>
-        <div class="field"><label>עיר *</label><input type="text" name="city" value="${v('city')}" required placeholder="עיר"></div>
+        <div class="field"><label>עיר *</label><input type="text" list="dl-cities" name="city" value="${v('city')}" required placeholder="הקלד לחיפוש עיר..." autocomplete="off"></div>
 
         <div class="section-title">👤 פרטי הלקוח</div>
         <div class="field" style="grid-column:1/-1;position:relative">
@@ -1070,7 +1076,7 @@ function renderOrderForm(editId) {
         </div>
         <!-- משלוח לבית חולים -->
         <div class="dest-group" data-dest="hospital" style="display:none">
-          <div class="field"><label>שם בית החולים</label><input type="text" name="venueName" value="${v('venueName')}"></div>
+          <div class="field"><label>שם בית החולים</label><input type="text" list="dl-hospitals" name="venueName" value="${v('venueName')}" placeholder="הקלד לחיפוש בית חולים..." autocomplete="off"></div>
           <div class="field"><label>מחלקה</label><input type="text" name="department" value="${v('department')}"></div>
           <div class="field"><label>קומה</label><input type="text" name="floor" value="${v('floor')}"></div>
           <div class="field"><label>חדר</label><input type="text" name="room" value="${v('room')}"></div>
@@ -1101,9 +1107,11 @@ function renderOrderForm(editId) {
 
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);flex-wrap:wrap;">
         <button type="button" class="btn btn-outline" data-page="orders">ביטול</button>
-        ${isEdit ? `<button type="button" class="btn btn-gold" onclick="printOrderForm(${editId})">🖨 הדפס הזמנה</button>` : ''}
+        ${isEdit ? `<button type="button" class="btn btn-gold" onclick="printOrderAndDelivery(${editId})">🖨 הדפס (2 דפים)</button>` : ''}
         <button type="submit" class="btn btn-primary" id="submit-order-btn">💾 ${isEdit ? 'שמור שינויים' : 'צור הזמנה'}</button>
       </div>
+      <datalist id="dl-cities">${IL_CITIES.map(c=>`<option value="${escHtml(c)}"></option>`).join('')}</datalist>
+      <datalist id="dl-hospitals">${IL_HOSPITALS.map(h=>`<option value="${escHtml(h)}"></option>`).join('')}</datalist>
     </form>
   </div>`;
 }
@@ -1195,6 +1203,53 @@ function printOrderForm(id) {
     + '<div class="row"><span class="key">טלפון מקבל:</span><span class="val">' + (o.receiverPhone||'') + (o.extraPhone?' / '+o.extraPhone:'') + '</span></div>'
     + (o.deliveryNotes ? '<div class="row"><span class="key">הערות:</span><span class="val">' + o.deliveryNotes + '</span></div>' : '')
     + '<br><div class="no-print" style="text-align:center"><button onclick="window.print()" style="padding:12px 30px;background:#3E5C1A;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer">🖨 הדפס</button></div>'
+    + '<scr' + 'ipt>window.print();</scr' + 'ipt></body></html>');
+}
+
+// הדפסת 2 דפים: (1) דף עבודה לעובדות, (2) תעודת משלוח למשלוחן
+function printOrderAndDelivery(id) {
+  const o = DB.orders.find(x => x.id === id);
+  if (!o) return;
+  const esc = s => (s == null ? '' : String(s));
+  const win = window.open('', '_blank');
+  const css = `body{font-family:Arial;direction:rtl;color:#222;margin:0}
+    .page{padding:30px 36px;min-height:95vh;box-sizing:border-box}
+    .pagebreak{page-break-before:always}
+    h1{color:#3E5C1A;border-bottom:3px solid #B89A28;padding-bottom:8px;margin:0 0 16px}
+    h2{color:#3E5C1A;font-size:17px;margin:18px 0 4px}
+    .badge{display:inline-block;background:#3E5C1A;color:#fff;border-radius:6px;padding:3px 12px;font-size:14px}
+    .row{display:flex;gap:14px;padding:6px 0;border-bottom:1px dashed #ddd}
+    .key{font-weight:700;min-width:120px;color:#555}
+    .val{flex:1;font-size:15px}
+    .big{font-size:20px;font-weight:800}
+    .flag{display:inline-block;background:#FBF3D0;border:1px solid #B89A28;color:#7a6410;border-radius:6px;padding:5px 12px;margin:8px 6px 0 0;font-weight:700}
+    @media print{.no-print{display:none}}`;
+  const p1 = `<div class="page">
+    <h1>🍎 דף עבודה לעובדות — הזמנה ${esc(o.orderNum)}</h1>
+    <div class="row"><span class="key">תאריך אספקה</span><span class="val big">${formatDate(o.deliveryDate)} ${esc(o.deliveryTime)}</span></div>
+    <div class="row"><span class="key">לקוח</span><span class="val">${esc(o.customerName)} — ${esc(o.phone || o.mobile)}</span></div>
+    <h2>פרטי ההזמנה</h2>
+    <div class="row"><span class="key">מוצר</span><span class="val big">${esc(o.productName)}</span></div>
+    <div class="row"><span class="key">כשרות</span><span class="val"><span class="badge">${esc(o.kashrut || 'פרווה')}</span></span></div>
+    <div class="row"><span class="key">קאפה / הדפסה</span><span class="val">${esc(o.kafeType || '—')}</span></div>
+    <div class="row"><span class="key">ברכה</span><span class="val">${esc(o.blessing || '—')}</span></div>
+    <div class="row"><span class="key">הערות</span><span class="val">${esc(o.notes || '—')}</span></div>
+    <div>${o.saveForEnd ? '<span class="flag">⏳ לשמור לסוף האירוע</span>' : ''}${o.setupAtEvent ? '<span class="flag">🏗 הקמה באירוע</span>' : ''}</div>
+  </div>`;
+  const p2 = `<div class="page pagebreak">
+    <h1>📦 תעודת משלוח — הזמנה ${esc(o.orderNum)}</h1>
+    <div class="row"><span class="key">תאריך</span><span class="val big">${formatDate(o.deliveryDate)} ${esc(o.deliveryTime)}</span></div>
+    <div class="row"><span class="key">יעד</span><span class="val">${destLabel(o)}</span></div>
+    <div class="row"><span class="key">כתובת</span><span class="val big">${esc(destSummary(o))}</span></div>
+    <div class="row"><span class="key">שם מקבל</span><span class="val">${esc(o.receiverName || o.customerName)}</span></div>
+    <div class="row"><span class="key">טלפון</span><span class="val big">${esc(o.receiverPhone || o.phone || o.mobile)}${o.extraPhone ? ' / ' + esc(o.extraPhone) : ''}</span></div>
+    <div class="row"><span class="key">מוצר</span><span class="val">${esc(o.productName)} (${esc(o.kashrut || 'פרווה')})</span></div>
+    <div class="row"><span class="key">הערות למשלוח</span><span class="val">${esc(o.deliveryNotes || '—')}</span></div>
+    <div>${o.saveForEnd ? '<span class="flag">⏳ לשמור לסוף האירוע</span>' : ''}${o.setupAtEvent ? '<span class="flag">🏗 המשלוחן מקים באירוע</span>' : ''}</div>
+  </div>`;
+  win.document.write('<html dir="rtl"><head><meta charset="UTF-8"><title>הזמנה ' + esc(o.orderNum) + '</title><style>' + css + '</style></head><body>'
+    + p1 + p2
+    + '<div class="no-print" style="text-align:center;padding:16px"><button onclick="window.print()" style="padding:12px 30px;background:#3E5C1A;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer">🖨 הדפס 2 דפים</button></div>'
     + '<scr' + 'ipt>window.print();</scr' + 'ipt></body></html>');
 }
 
@@ -1324,8 +1379,8 @@ function submitOrder(e, editId) {
     else toast('הזמנה נוצרה ✅ — עברה למעקב גביה');
     // Ask to print
     setTimeout(() => {
-      if (confirm('הזמנה ' + newOrder.orderNum + ' נוצרה! האם להדפיס?')) {
-        printOrderForm(newOrder.id);
+      if (confirm('הזמנה ' + newOrder.orderNum + ' נוצרה! להדפיס דף עבודה + תעודת משלוח?')) {
+        printOrderAndDelivery(newOrder.id);
       }
     }, 300);
   }
@@ -1493,10 +1548,11 @@ function renderProducts() {
     </div>
     <div class="table-wrap">
       <table>
-        <tr><th>שם</th><th>תכולה</th><th>אורך</th><th>רוחב</th><th>משקל</th><th>מחיר</th><th>פעולות</th></tr>
+        <tr><th>שם</th><th>תכולה</th><th>כשרות</th><th>אורך</th><th>רוחב</th><th>משקל</th><th>מחיר</th><th>פעולות</th></tr>
         ${DB.products.map(p => `<tr>
           <td><strong>${escHtml(p.name)}</strong></td>
           <td>${escHtml(p.content)}</td>
+          <td><span class="badge ${p.kashrut==='חלבי'?'badge-blue':'badge-green'}">${escHtml(p.kashrut||'פרווה')}</span></td>
           <td>${p.length} ס"מ</td>
           <td>${p.width} ס"מ</td>
           <td>${p.weight} ק"ג</td>
