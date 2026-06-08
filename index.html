@@ -566,6 +566,7 @@ function render() {
     default:            content.innerHTML = '<p>עמוד לא נמצא</p>';
   }
   bindEvents();
+  if (document.getElementById('f-destType')) toggleDest();
 }
 
 // ===================== HISTORICAL DATA (Google Sheets) =====================
@@ -784,6 +785,7 @@ function renderOrdersTable(orders) {
         <td>₪${o.totalPrice.toLocaleString()}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="showOrderDetails(${o.id})">👁 פרטים</button>
+          <button class="btn btn-outline btn-sm" onclick="editOrder(${o.id})">✏️ ערוך</button>
           <button class="btn btn-gold btn-sm" onclick="showDeliveryLabel(${o.id})">📦 תעודה</button>
           ${!o.paymentDone ? `<button class="btn btn-primary btn-sm" onclick="markPaid(${o.id})">✅ שולם</button>` : ''}
         </td>
@@ -841,7 +843,8 @@ function showOrderDetails(id) {
         <p><strong>תאריך משלוח:</strong> ${formatDate(o.deliveryDate)} ${o.deliveryTime}</p>
         <p><strong>הערות:</strong> ${escHtml(o.notes) || '—'}</p>
         <p><strong>ברכה:</strong> ${escHtml(o.blessing) || '—'}</p>
-        <p><strong>קאפה:</strong> ₪${o.kafe}</p>
+        <p><strong>קאפה:</strong> ${escHtml(o.kafeType) || '—'}${o.kafe?` (₪${o.kafe})`:''}</p>
+        <p><strong>כשרות:</strong> ${escHtml(o.kashrut) || '—'}</p>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px;">
@@ -857,6 +860,9 @@ function showOrderDetails(id) {
       </div>
       <div>
         <div class="section-title" style="margin-top:0">פרטי משלוח</div>
+        <p><strong>סוג יעד:</strong> ${escHtml(o.destType) || 'בית'}${o.venueName?` — ${escHtml(o.venueName)}`:''}${o.room?` (חדר ${escHtml(o.room)})`:''}</p>
+        ${o.saveForEnd?`<p style="color:#B89A28;font-weight:700">⏳ לשמור לסוף האירוע</p>`:''}
+        ${o.setupAtEvent?`<p style="color:#B89A28;font-weight:700">🏗 סגירה/הקמה באירוע</p>`:''}
         <p><strong>למשפחת:</strong> ${escHtml(o.deliveryTo)}</p>
         <p><strong>כתובת:</strong> ${escHtml(o.address)}, כניסה ${escHtml(o.entrance)}, קומה ${escHtml(o.floor)}, דירה ${escHtml(o.apt)}</p>
         <p><strong>שכונה:</strong> ${escHtml(o.neighborhood)}</p>
@@ -926,6 +932,28 @@ function printLabel() {
 }
 
 // ===================== ORDER FORM =====================
+// קאפה / הדפסה — אפשרויות קבועות עם מחיר
+const KAFE_OPTIONS = [
+  {label:'הדפסה רגילה צבעוני (ללא עלות)', price:0},
+  {label:'קאפה A4', price:45},
+  {label:'קאפה A3', price:60},
+  {label:'חצי גיליון', price:120},
+  {label:'גיליון', price:180},
+  {label:'קאפה 1×1.5 מטר', price:360},
+  {label:'קאפה 1.2×1.4 מטר', price:400},
+  {label:'קאפה 1.5×2 מטר', price:660},
+];
+
+// פתיחת טופס עריכה להזמנה קיימת
+function editOrder(id) {
+  currentPage = 'new-order';
+  document.getElementById('page-title').textContent = 'עריכת הזמנה';
+  document.getElementById('topbar-actions').innerHTML = '';
+  document.getElementById('content').innerHTML = renderOrderForm(id);
+  bindEvents();
+  window.scrollTo(0, 0);
+}
+
 function renderOrderForm(editId) {
   const isEdit = !!editId;
   const o = isEdit ? DB.orders.find(x => x.id === editId) : null;
@@ -974,10 +1002,24 @@ function renderOrderForm(editId) {
         </div>
         <div class="field"><label>הערות</label><input type="text" name="notes" value="${v('notes')}"></div>
         <div class="field"><label>ברכה</label><input type="text" name="blessing" value="${v('blessing')}" placeholder="טקסט הברכה"></div>
+        <div class="field"><label>כשרות</label>
+          <select name="kashrut">
+            <option value="" ${!v('kashrut')?'selected':''}>— בחר —</option>
+            <option value="פרווה" ${v('kashrut')==='פרווה'?'selected':''}>פרווה</option>
+            <option value="חלבי" ${v('kashrut')==='חלבי'?'selected':''}>חלבי</option>
+          </select>
+        </div>
 
         <div class="section-title">💰 תשלום</div>
         <div class="field"><label>מחיר עיצוב ₪</label><input type="number" name="designPrice" id="f-designPrice" value="${v('designPrice',0)}" oninput="calcTotal()"></div>
-        <div class="field"><label>קאפה ₪</label><input type="number" name="kafe" id="f-kafe" value="${v('kafe',0)}" oninput="calcTotal()"></div>
+        <div class="field"><label>קאפה / הדפסה</label>
+          <select name="kafe" id="f-kafe" onchange="calcTotal()">
+            ${KAFE_OPTIONS.map(k => {
+              const sel = (v('kafeType') && v('kafeType')===k.label) || (!v('kafeType') && parseFloat(v('kafe',0))===k.price);
+              return `<option value="${k.price}" data-label="${escHtml(k.label)}" ${sel?'selected':''}>${escHtml(k.label)}${k.price?` — ₪${k.price}`:''}</option>`;
+            }).join('')}
+          </select>
+        </div>
         <div class="field"><label>משלוח ₪</label><input type="number" name="deliveryCost" id="f-deliveryCost" value="${v('deliveryCost',0)}" oninput="calcTotal()"></div>
         <div class="field"><label>גרפיקה ₪</label><input type="number" name="graphicsCost" id="f-graphicsCost" value="${v('graphicsCost',0)}" oninput="calcTotal()"></div>
         <div class="field"><label>אמצעי תשלום</label>
@@ -999,6 +1041,29 @@ function renderOrderForm(editId) {
           <div style="background:var(--green-dark);color:white;padding:12px 20px;border-radius:10px;font-size:18px;font-weight:800;text-align:center;">
             סה"כ: ₪<span id="f-total">${v('totalPrice',0)}</span>
           </div>
+        </div>
+
+        <div class="section-title">🎪 יעד ופרטי אירוע</div>
+        <div class="field"><label>סוג יעד</label>
+          <select name="destType" id="f-destType" onchange="toggleDest()">
+            <option value="בית" ${v('destType','בית')==='בית'?'selected':''}>בית פרטי</option>
+            <option value="מלון" ${v('destType')==='מלון'?'selected':''}>מלון</option>
+            <option value="אולם" ${v('destType')==='אולם'?'selected':''}>אולם</option>
+          </select>
+        </div>
+        <div class="field" id="venue-name-field"><label>שם המלון / האולם</label><input type="text" name="venueName" value="${v('venueName')}"></div>
+        <div class="field" id="venue-room-field"><label>מספר חדר (במלון)</label><input type="text" name="room" value="${v('room')}"></div>
+        <div class="field"><label>לשמור לסוף האירוע?</label>
+          <select name="saveForEnd">
+            <option value="0" ${!v('saveForEnd')?'selected':''}>לא</option>
+            <option value="1" ${v('saveForEnd')?'selected':''}>כן — לשמור לסוף האירוע</option>
+          </select>
+        </div>
+        <div class="field"><label>סגירה / הקמה באירוע?</label>
+          <select name="setupAtEvent">
+            <option value="0" ${!v('setupAtEvent')?'selected':''}>לא</option>
+            <option value="1" ${v('setupAtEvent')?'selected':''}>כן — המשלוחן מקים באירוע (הזמנה גדולה)</option>
+          </select>
         </div>
 
         <div class="section-title">📦 תעודת משלוח</div>
@@ -1096,7 +1161,8 @@ function printOrderForm(id) {
     + '<div class="row"><span class="key">מוצר:</span><span class="val">' + (o.productName||'') + '</span></div>'
     + '<div class="row"><span class="key">ברכה:</span><span class="val">' + (o.blessing||'—') + '</span></div>'
     + '<div class="row"><span class="key">הערות:</span><span class="val">' + (o.notes||'—') + '</span></div>'
-    + '<div class="row"><span class="key">קאפה:</span><span class="val">₪' + (o.kafe||0) + '</span></div>'
+    + '<div class="row"><span class="key">כשרות:</span><span class="val">' + (o.kashrut||'—') + '</span></div>'
+    + '<div class="row"><span class="key">קאפה:</span><span class="val">' + (o.kafeType||'—') + (o.kafe?' (₪'+o.kafe+')':'') + '</span></div>'
     + '<h3>💰 תשלום</h3>'
     + '<div class="row"><span class="key">מחיר עיצוב:</span><span class="val">₪' + (o.designPrice||0) + '</span></div>'
     + '<div class="row"><span class="key">משלוח:</span><span class="val">₪' + (o.deliveryCost||0) + '</span></div>'
@@ -1104,6 +1170,9 @@ function printOrderForm(id) {
     + '<div class="row"><span class="key">אמצעי תשלום:</span><span class="val">' + (o.paymentMethod||'') + '</span></div>'
     + '<div class="total">סה"כ לתשלום: ₪' + (o.totalPrice||0).toLocaleString() + '</div>'
     + '<h3>📦 פרטי משלוח</h3>'
+    + '<div class="row"><span class="key">סוג יעד:</span><span class="val">' + (o.destType||'בית') + (o.venueName?' — '+o.venueName:'') + (o.room?' (חדר '+o.room+')':'') + '</span></div>'
+    + (o.saveForEnd ? '<div class="row"><span class="key">⏳ הערה:</span><span class="val">לשמור לסוף האירוע</span></div>' : '')
+    + (o.setupAtEvent ? '<div class="row"><span class="key">🏗 הערה:</span><span class="val">סגירה/הקמה באירוע</span></div>' : '')
     + '<div class="row"><span class="key">למשפחת:</span><span class="val">' + (o.deliveryTo||'') + '</span></div>'
     + '<div class="row"><span class="key">כתובת:</span><span class="val">' + (o.address||'') + (o.entrance?' כניסה '+o.entrance:'') + (o.floor?' קומה '+o.floor:'') + (o.apt?' דירה '+o.apt:'') + '</span></div>'
     + '<div class="row"><span class="key">שם מקבל:</span><span class="val">' + (o.receiverName||'') + '</span></div>'
@@ -1130,6 +1199,18 @@ function calcTotal() {
   if (t) t.textContent = total;
 }
 
+// הצגה/הסתרה של שדות יעד לפי סוג היעד (בית / מלון / אולם)
+function toggleDest() {
+  const t = document.getElementById('f-destType');
+  if (!t) return;
+  const isHome  = t.value === 'בית';
+  const isHotel = t.value === 'מלון';
+  const nameF = document.getElementById('venue-name-field');
+  const roomF = document.getElementById('venue-room-field');
+  if (nameF) nameF.style.display = isHome ? 'none' : '';
+  if (roomF) roomF.style.display = isHotel ? '' : 'none';
+}
+
 function submitOrder(e, editId) {
   e.preventDefault();
   const form = e.target;
@@ -1140,6 +1221,19 @@ function submitOrder(e, editId) {
   const product = DB.products.find(p => p.id === productId);
   const paymentDone = get('paymentDone') === '1';
   const total = (parseFloat(get('designPrice'))||0) + (parseFloat(get('kafe'))||0) + (parseFloat(get('deliveryCost'))||0) + (parseFloat(get('graphicsCost'))||0);
+  // תווית סוג הקאפה (מהאופציה הנבחרת בתפריט)
+  const kafeSel = document.getElementById('f-kafe');
+  const kafeType = (kafeSel && kafeSel.selectedOptions[0]) ? (kafeSel.selectedOptions[0].dataset.label || '') : '';
+  // שדות חדשים
+  const extraFields = {
+    kafeType,
+    kashrut: get('kashrut'),
+    destType: get('destType'),
+    venueName: get('venueName'),
+    room: get('room'),
+    saveForEnd: get('saveForEnd') === '1',
+    setupAtEvent: get('setupAtEvent') === '1',
+  };
 
   if (editId) {
     const idx = DB.orders.findIndex(o => o.id === editId);
@@ -1159,6 +1253,7 @@ function submitOrder(e, editId) {
         senderName: get('senderName'), senderPhone: get('senderPhone'), senderMobile: get('senderMobile'),
         receiverName: get('receiverName'), receiverPhone: get('receiverPhone'), receiverMobile: get('receiverMobile'),
         deliveryNotes: get('deliveryNotes'),
+        ...extraFields,
       });
       toast('הזמנה עודכנה ✅');
     }
@@ -1180,6 +1275,7 @@ function submitOrder(e, editId) {
       senderName: get('senderName'), senderPhone: get('senderPhone'), senderMobile: get('senderMobile'),
       receiverName: get('receiverName'), receiverPhone: get('receiverPhone'), receiverMobile: get('receiverMobile'),
       deliveryNotes: get('deliveryNotes'),
+      ...extraFields,
       status: 'waiting', colklarDone: false, fruitsDone: false, closeDone: false,
       createdAt: new Date().toISOString().slice(0,10),
     };
@@ -1838,6 +1934,8 @@ function parseOrder(o) {
     colklarDone: o.colklarDone==='true'||o.colklarDone===true,
     fruitsDone: o.fruitsDone==='true'||o.fruitsDone===true,
     closeDone: o.closeDone==='true'||o.closeDone===true,
+    saveForEnd: o.saveForEnd==='true'||o.saveForEnd===true||o.saveForEnd==='TRUE',
+    setupAtEvent: o.setupAtEvent==='true'||o.setupAtEvent===true||o.setupAtEvent==='TRUE',
   };
 }
 
