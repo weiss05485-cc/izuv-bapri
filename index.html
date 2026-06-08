@@ -2253,7 +2253,15 @@ async function loadFromGoogleSheets() {
   }
 }
 
-function saveOrderToGS(order)    { gsSave('saveOrder', order); }
+function saveOrderToGS(order) {
+  // שולחים תאריך/שעה עם גרש מוביל כדי ש-Google Sheets ישמור כטקסט (מונע הזזת אזור-זמן).
+  // הגרש "נבלע" ע"י Sheets, אז בקריאה חוזר ערך נקי. ה-DB המקומי נשאר ללא שינוי.
+  const o = Object.assign({}, order);
+  ['deliveryDate','deliveryTime','createdAt'].forEach(k => {
+    if (o[k] && typeof o[k] === 'string' && o[k].charAt(0) !== "'") o[k] = "'" + o[k];
+  });
+  gsSave('saveOrder', o);
+}
 function saveCustomerToGS(cust)  { gsSave('saveCustomer', cust); }
 function saveProductToGS(prod)   { gsSave('saveProduct', prod); }
 function saveTasksToGS(tasks)    { gsSave('saveTasks', tasks); }
