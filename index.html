@@ -514,13 +514,18 @@ function formatDate(d) {
   return d;
 }
 
-// מציג שעה נקייה (HH:MM). תומך גם בערך ISO ישן (לפני תיקון הצד-שרת)
+// מציג שעה נקייה (HH:MM). אם הגיע ISO (Google Sheets ממיר שעה לאובייקט תאריך
+// באזור הזמן של הסקריפט, UTC-8), ממיר חזרה לשעה המקורית.
 function formatTime(t) {
   if (!t) return '';
   t = String(t);
   if (t.indexOf('T') !== -1) {
-    const m = t.match(/T(\d{2}:\d{2})/);
-    return m ? m[1] : '';
+    try {
+      return new Date(t).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', timeZone:'America/Los_Angeles'});
+    } catch(e) {
+      const m = t.match(/T(\d{2}:\d{2})/);
+      return m ? m[1] : '';
+    }
   }
   return t;
 }
