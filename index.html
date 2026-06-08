@@ -1917,31 +1917,32 @@ function loadFromLocalStorage() {
   try { localStorage.removeItem(LS_KEY); } catch(e) {}
 }
 
-// Auto-save after any data change
+// Auto-save after any data change.
+// NOTE: these MUST be assignments (X = function...), not `function X(){}` declarations.
+// A second `function X(){}` would be hoisted and overwrite the original, so _origX
+// would point at the wrapper itself → infinite recursion → saves silently crash.
 const _origSubmitOrder = submitOrder;
 const _origMarkPaid = markPaid;
-const _origSaveCustomer = saveCustomer;
-const _origDeleteCustomer = deleteCustomer;
 const _origWorkToggle = workToggle;
 
-function submitOrder(e, editId) {
+submitOrder = function(e, editId) {
   _origSubmitOrder(e, editId);
   saveToLocalStorage();
   const order = editId ? DB.orders.find(o=>o.id==editId) : DB.orders[DB.orders.length-1];
   if (order) saveOrderToGS(order);
-}
-function markPaid(id) {
+};
+markPaid = function(id) {
   _origMarkPaid(id);
   saveToLocalStorage();
   const order = DB.orders.find(o=>o.id===id);
   if (order) saveOrderToGS(order);
-}
-function workToggle(id, field, label) {
+};
+workToggle = function(id, field, label) {
   _origWorkToggle(id, field, label);
   saveToLocalStorage();
   const order = DB.orders.find(o=>o.id===id);
   if (order) saveOrderToGS(order);
-}
+};
 function updateOrderStatus(id, status) {
   const o = DB.orders.find(o=>o.id===id);
   if (o) { o.status=status; toast('סטטוס עודכן'); saveOrderToGS(o); render(); }
