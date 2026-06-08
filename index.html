@@ -619,6 +619,7 @@ function render() {
   renderTopbar();
   const _dt = document.getElementById('f-destType');
   if (_dt) setDest(_dt.value || 'home');
+  if (document.getElementById('f-kafe')) onKafeChange();
 }
 
 // ===================== HISTORICAL DATA (Google Sheets) =====================
@@ -917,7 +918,7 @@ function showOrderDetails(id) {
         ${o.saveForEnd?`<p style="color:#B89A28;font-weight:700">⏳ לשמור לסוף האירוע</p>`:''}
         ${o.setupAtEvent?`<p style="color:#B89A28;font-weight:700">🏗 סגירה/הקמה באירוע</p>`:''}
         ${o.receiverName?`<p><strong>שם מקבל:</strong> ${escHtml(o.receiverName)}</p>`:''}
-        <p><strong>טלפון מקבל:</strong> ${escHtml(o.receiverPhone)}${o.extraPhone?` / ${escHtml(o.extraPhone)}`:''}</p>
+        <p><strong>טלפון מקבל:</strong> ${escHtml(o.receiverPhone)}${o.receiverMobile?` / ${escHtml(o.receiverMobile)}`:''}</p>
         <p><strong>הערות למשלוח:</strong> ${escHtml(o.deliveryNotes) || '—'}</p>
       </div>
     </div>
@@ -1025,7 +1026,6 @@ function renderOrderForm(editId) {
         <div class="section-title">📅 פרטי משלוח</div>
         <div class="field"><label>תאריך למשלוח *</label><input type="date" name="deliveryDate" value="${v('deliveryDate')}" required></div>
         <div class="field"><label>שעה</label><input type="time" name="deliveryTime" value="${v('deliveryTime','10:00')}"></div>
-        <div class="field"><label>עיר *</label><input type="text" list="dl-cities" name="city" value="${v('city')}" required placeholder="הקלד לחיפוש עיר..." autocomplete="off"></div>
 
         <div class="section-title">👤 פרטי הלקוח</div>
         <div class="field" style="grid-column:1/-1;position:relative">
@@ -1070,13 +1070,16 @@ function renderOrderForm(editId) {
         <div class="section-title">💰 תשלום</div>
         <div class="field"><label>מחיר עיצוב ₪</label><input type="number" name="designPrice" id="f-designPrice" value="${v('designPrice',0)}" oninput="calcTotal()"></div>
         <div class="field"><label>קאפה / הדפסה</label>
-          <select name="kafe" id="f-kafe" onchange="calcTotal()">
+          <select name="kafe" id="f-kafe" onchange="onKafeChange()">
             ${KAFE_OPTIONS.map(k => {
               const sel = (v('kafeType') && v('kafeType')===k.label) || (!v('kafeType') && parseFloat(v('kafe',0))===k.price);
               return `<option value="${k.price}" data-label="${escHtml(k.label)}" ${sel?'selected':''}>${escHtml(k.label)}${k.price?` — ₪${k.price}`:''}</option>`;
             }).join('')}
+            <option value="custom" data-label="התאמה אישית" ${(v('kafeType')||'').indexOf('התאמה אישית')===0?'selected':''}>התאמה אישית (מחיר ידני)</option>
           </select>
         </div>
+        <div class="field" id="kafe-size-field" style="display:none"><label>מידות הקאפה</label><input type="text" name="kafeSize" id="f-kafeSize" value="${v('kafeSize')}" placeholder="לדוגמה: 70×100 ס\"מ"></div>
+        <div class="field" id="kafe-price-field" style="display:none"><label>מחיר קאפה ₪</label><input type="number" name="kafeCustomPrice" id="f-kafeCustomPrice" value="${(v('kafeType')||'').indexOf('התאמה אישית')===0?v('kafe',0):''}" oninput="calcTotal()"></div>
         <div class="field"><label>משלוח ₪</label><input type="number" name="deliveryCost" id="f-deliveryCost" value="${v('deliveryCost',0)}" oninput="calcTotal()"></div>
         <div class="field"><label>גרפיקה ₪</label><input type="number" name="graphicsCost" id="f-graphicsCost" value="${v('graphicsCost',0)}" oninput="calcTotal()"></div>
         <div class="field"><label>אמצעי תשלום</label>
@@ -1114,39 +1117,54 @@ function renderOrderForm(editId) {
 
         <!-- איסוף עצמי -->
         <div class="dest-group" data-dest="pickup" style="display:none">
-          <p style="grid-column:1/-1;color:var(--text-muted);margin:4px 0">🏠 הלקוח אוסף עצמאית מהחנות — אין צורך בפרטי כתובת.</p>
+          <p style="grid-column:1/-1;color:var(--text-muted);margin:4px 0">🏠 הלקוח אוסף עצמאית מהחנות — אין צורך בפרטי משלוח.</p>
         </div>
         <!-- משלוח לבית -->
         <div class="dest-group" data-dest="home" style="display:none">
-          <div class="field"><label>רחוב</label><input type="text" name="address" value="${v('address')}"></div>
+          <div class="field"><label>למשפחת</label><input type="text" name="deliveryTo" value="${v('deliveryTo')}"></div>
+          <div class="field"><label>עיר</label><input type="text" list="dl-cities" name="city" value="${v('city')}" placeholder="הקלד לחיפוש עיר..." autocomplete="off"></div>
+          <div class="field"><label>שכונה</label><input type="text" name="neighborhood" value="${v('neighborhood')}"></div>
+          <div class="field"><label>כתובת</label><input type="text" name="address" value="${v('address')}"></div>
           <div class="field"><label>מספר בית</label><input type="text" name="houseNum" value="${v('houseNum')}"></div>
-          <div class="field"><label>דירה</label><input type="text" name="apt" value="${v('apt')}"></div>
           <div class="field"><label>כניסה</label><input type="text" name="entrance" value="${v('entrance')}"></div>
+          <div class="field"><label>קומה</label><input type="text" name="floor" value="${v('floor')}"></div>
+          <div class="field"><label>דירה</label><input type="text" name="apt" value="${v('apt')}"></div>
+          <div class="field"><label>שם המקבל</label><input type="text" name="receiverName" value="${v('receiverName')}"></div>
+          <div class="field"><label>טלפון המקבל</label><input type="tel" name="receiverPhone" value="${v('receiverPhone')}"></div>
+          <div class="field"><label>נייד המקבל</label><input type="tel" name="receiverMobile" value="${v('receiverMobile')}"></div>
         </div>
         <!-- משלוח למלון -->
         <div class="dest-group" data-dest="hotel" style="display:none">
+          <div class="field"><label>עיר</label><input type="text" list="dl-cities" name="city" value="${v('city')}" placeholder="הקלד לחיפוש עיר..." autocomplete="off"></div>
+          <div class="field"><label>שם המלון</label><input type="text" name="venueName" value="${v('venueName')}"></div>
           <div class="field"><label>רחוב</label><input type="text" name="address" value="${v('address')}"></div>
           <div class="field"><label>מספר בית</label><input type="text" name="houseNum" value="${v('houseNum')}"></div>
-          <div class="field"><label>שם המלון</label><input type="text" name="venueName" value="${v('venueName')}"></div>
           <div class="field"><label>קומה</label><input type="text" name="floor" value="${v('floor')}"></div>
           <div class="field"><label>חדר</label><input type="text" name="room" value="${v('room')}"></div>
+          <div class="field"><label>שם המקבל</label><input type="text" name="receiverName" value="${v('receiverName')}"></div>
+          <div class="field"><label>טלפון המקבל</label><input type="tel" name="receiverPhone" value="${v('receiverPhone')}"></div>
+          <div class="field"><label>נייד המקבל</label><input type="tel" name="receiverMobile" value="${v('receiverMobile')}"></div>
         </div>
         <!-- משלוח לבית חולים -->
         <div class="dest-group" data-dest="hospital" style="display:none">
+          <div class="field"><label>עיר</label><input type="text" list="dl-cities" name="city" value="${v('city')}" placeholder="הקלד לחיפוש עיר..." autocomplete="off"></div>
           <div class="field"><label>שם בית החולים</label><input type="text" list="dl-hospitals" name="venueName" value="${v('venueName')}" placeholder="הקלד לחיפוש בית חולים..." autocomplete="off"></div>
           <div class="field"><label>מחלקה</label><input type="text" name="department" value="${v('department')}"></div>
           <div class="field"><label>קומה</label><input type="text" name="floor" value="${v('floor')}"></div>
           <div class="field"><label>חדר</label><input type="text" name="room" value="${v('room')}"></div>
+          <div class="field"><label>שם המקבל</label><input type="text" name="receiverName" value="${v('receiverName')}"></div>
+          <div class="field"><label>טלפון המקבל</label><input type="tel" name="receiverPhone" value="${v('receiverPhone')}"></div>
+          <div class="field"><label>נייד המקבל</label><input type="tel" name="receiverMobile" value="${v('receiverMobile')}"></div>
         </div>
         <!-- משלוח לאולם -->
         <div class="dest-group" data-dest="hall" style="display:none">
+          <div class="field"><label>עיר</label><input type="text" list="dl-cities" name="city" value="${v('city')}" placeholder="הקלד לחיפוש עיר..." autocomplete="off"></div>
           <div class="field"><label>שם האולם</label><input type="text" name="venueName" value="${v('venueName')}"></div>
           <div class="field"><label>רחוב</label><input type="text" name="address" value="${v('address')}"></div>
+          <div class="field"><label>שם המקבל</label><input type="text" name="receiverName" value="${v('receiverName')}"></div>
+          <div class="field"><label>טלפון המקבל</label><input type="tel" name="receiverPhone" value="${v('receiverPhone')}"></div>
+          <div class="field"><label>נייד המקבל</label><input type="tel" name="receiverMobile" value="${v('receiverMobile')}"></div>
         </div>
-
-        <div class="field"><label>טלפון המקבל</label><input type="tel" name="receiverPhone" value="${v('receiverPhone')}"></div>
-        <div class="field"><label>טלפון נוסף</label><input type="tel" name="extraPhone" value="${v('extraPhone')}"></div>
-        <div class="field"><label>שם המקבל (אם שונה)</label><input type="text" name="receiverName" value="${v('receiverName')}"></div>
         <div class="field"><label>לשמור לסוף האירוע?</label>
           <select name="saveForEnd">
             <option value="0" ${!v('saveForEnd')?'selected':''}>לא</option>
@@ -1210,9 +1228,8 @@ function fillCustomer(id) {
   if (mb) mb.value = c.mobile || c.phone || '';
   if (ac) ac.value = c.name;
   if (dd) dd.style.display = 'none';
-  // Also fill city
-  const cityInput = document.querySelector('input[name="city"]');
-  if (cityInput && c.city) cityInput.value = c.city;
+  // Also fill city (בכל בלוקי היעד)
+  if (c.city) document.querySelectorAll('input[name="city"]').forEach(el => el.value = c.city);
   toast('לקוח נבחר: ' + c.name);
 }
 
@@ -1293,13 +1310,19 @@ function printOrderAndDelivery(id) {
     <div class="row"><span class="key">הערות</span><span class="val">${esc(o.notes || '—')}</span></div>
     <div>${o.saveForEnd ? '<span class="flag">⏳ לשמור לסוף האירוע</span>' : ''}${o.setupAtEvent ? '<span class="flag">🏗 הקמה באירוע</span>' : ''}</div>
   </div>`;
+  const senderName = esc(o.customerName || ((o.firstName||'') + ' ' + (o.lastName||'')).trim());
+  const senderPhone = esc(o.phone || o.mobile || '');
   const p2 = `<div class="page pagebreak">
     <h1>📦 תעודת משלוח — הזמנה ${esc(o.orderNum)}</h1>
     <div class="row"><span class="key">תאריך</span><span class="val big">${formatDate(o.deliveryDate)} ${esc(o.deliveryTime)}</span></div>
+    <h2>פרטי השולח</h2>
+    <div class="row"><span class="key">שם השולח</span><span class="val">${senderName || '—'}</span></div>
+    <div class="row"><span class="key">טלפון השולח</span><span class="val">${senderPhone || '—'}</span></div>
+    <h2>יעד ומקבל</h2>
     <div class="row"><span class="key">יעד</span><span class="val">${destLabel(o)}</span></div>
     <div class="row"><span class="key">כתובת</span><span class="val big">${esc(destSummary(o))}</span></div>
     <div class="row"><span class="key">שם מקבל</span><span class="val">${esc(o.receiverName || o.customerName)}</span></div>
-    <div class="row"><span class="key">טלפון</span><span class="val big">${esc(o.receiverPhone || o.phone || o.mobile)}${o.extraPhone ? ' / ' + esc(o.extraPhone) : ''}</span></div>
+    <div class="row"><span class="key">טלפון מקבל</span><span class="val big">${esc(o.receiverPhone || '')}${o.receiverMobile ? ' / ' + esc(o.receiverMobile) : ''}</span></div>
     <div class="row"><span class="key">מוצר</span><span class="val">${esc(o.productName)} (${esc(o.kashrut || 'פרווה')})</span></div>
     <div class="row"><span class="key">הערות למשלוח</span><span class="val">${esc(o.deliveryNotes || '—')}</span></div>
     <div>${o.saveForEnd ? '<span class="flag">⏳ לשמור לסוף האירוע</span>' : ''}${o.setupAtEvent ? '<span class="flag">🏗 המשלוחן מקים באירוע</span>' : ''}</div>
@@ -1320,9 +1343,27 @@ function updateProductPrice(sel) {
   if (dp) { dp.value = price; calcTotal(); }
 }
 
+// קאפה בהתאמה אישית — מציג/מסתיר שדות מידות+מחיר
+function onKafeChange() {
+  const sel = document.getElementById('f-kafe');
+  const isCustom = sel && sel.value === 'custom';
+  const sf = document.getElementById('kafe-size-field');
+  const pf = document.getElementById('kafe-price-field');
+  if (sf) sf.style.display = isCustom ? '' : 'none';
+  if (pf) pf.style.display = isCustom ? '' : 'none';
+  calcTotal();
+}
+
+function kafePrice() {
+  const sel = document.getElementById('f-kafe');
+  if (!sel) return 0;
+  if (sel.value === 'custom') return parseFloat(document.getElementById('f-kafeCustomPrice')?.value || 0) || 0;
+  return parseFloat(sel.value) || 0;
+}
+
 function calcTotal() {
-  const get = id => parseFloat(document.getElementById(id)?.value || 0);
-  const total = get('f-designPrice') + get('f-kafe') + get('f-deliveryCost') + get('f-graphicsCost');
+  const get = id => parseFloat(document.getElementById(id)?.value || 0) || 0;
+  const total = get('f-designPrice') + kafePrice() + get('f-deliveryCost') + get('f-graphicsCost');
   const t = document.getElementById('f-total');
   if (t) t.textContent = total;
 }
@@ -1352,10 +1393,10 @@ function destSummary(o) {
   const t = o.destType || 'home';
   const city = o.city || '';
   if (t === 'pickup')   return 'איסוף עצמי מהחנות';
-  if (t === 'hotel')    return `מלון ${o.venueName||''}${o.address?', '+o.address:''}${o.houseNum?' '+o.houseNum:''}${o.floor?', קומה '+o.floor:''}${o.room?', חדר '+o.room:''}${city?', '+city:''}`;
-  if (t === 'hospital') return `${o.venueName||''}${o.department?', מחלקה '+o.department:''}${o.floor?', קומה '+o.floor:''}${o.room?', חדר '+o.room:''}${city?', '+city:''}`;
-  if (t === 'hall')     return `${o.venueName||''}${o.address?', '+o.address:''}${city?', '+city:''}`;
-  return `${o.address||''}${o.houseNum?' '+o.houseNum:''}${o.apt?', דירה '+o.apt:''}${o.entrance?', כניסה '+o.entrance:''}${city?', '+city:''}`;
+  if (t === 'hotel')    return `${city?city+', ':''}מלון ${o.venueName||''}${o.address?', '+o.address:''}${o.houseNum?' '+o.houseNum:''}${o.floor?', קומה '+o.floor:''}${o.room?', חדר '+o.room:''}`;
+  if (t === 'hospital') return `${city?city+', ':''}${o.venueName||''}${o.department?', מחלקה '+o.department:''}${o.floor?', קומה '+o.floor:''}${o.room?', חדר '+o.room:''}`;
+  if (t === 'hall')     return `${city?city+', ':''}אולם ${o.venueName||''}${o.address?', '+o.address:''}`;
+  return `${city?city+', ':''}${o.neighborhood?o.neighborhood+', ':''}${o.address||''}${o.houseNum?' '+o.houseNum:''}${o.entrance?', כניסה '+o.entrance:''}${o.floor?', קומה '+o.floor:''}${o.apt?', דירה '+o.apt:''}`;
 }
 
 function submitOrder(e, editId) {
@@ -1367,13 +1408,24 @@ function submitOrder(e, editId) {
   const productId = parseInt(get('productId'));
   const product = DB.products.find(p => p.id === productId);
   const paymentDone = get('paymentDone') === '1';
-  const total = (parseFloat(get('designPrice'))||0) + (parseFloat(get('kafe'))||0) + (parseFloat(get('deliveryCost'))||0) + (parseFloat(get('graphicsCost'))||0);
-  // תווית סוג הקאפה (מהאופציה הנבחרת בתפריט)
+  // קאפה — מחיר + תווית (כולל "התאמה אישית" עם מידות ומחיר ידני)
   const kafeSel = document.getElementById('f-kafe');
-  const kafeType = (kafeSel && kafeSel.selectedOptions[0]) ? (kafeSel.selectedOptions[0].dataset.label || '') : '';
+  let kafe = 0, kafeType = '', kafeSize = '';
+  if (kafeSel) {
+    if (kafeSel.value === 'custom') {
+      kafe = parseFloat(get('kafeCustomPrice')) || 0;
+      kafeSize = get('kafeSize');
+      kafeType = 'התאמה אישית' + (kafeSize ? ' (' + kafeSize + ')' : '');
+    } else {
+      kafe = parseFloat(kafeSel.value) || 0;
+      kafeType = kafeSel.selectedOptions[0] ? (kafeSel.selectedOptions[0].dataset.label || '') : '';
+    }
+  }
+  const total = (parseFloat(get('designPrice'))||0) + kafe + (parseFloat(get('deliveryCost'))||0) + (parseFloat(get('graphicsCost'))||0);
   // שדות חדשים
   const extraFields = {
     kafeType,
+    kafeSize,
     kashrut: get('kashrut'),  // "מוצרים באריזה" — פרווה/חלבי, נבחר בכל הזמנה
     destType: get('destType'),
     venueName: get('venueName'),
@@ -1395,7 +1447,7 @@ function submitOrder(e, editId) {
         customerType: get('customerType'), customerName: get('firstName')+' '+get('lastName'),
         productId, productName: product ? product.name : '',
         notes: get('notes'), blessing: get('blessing'),
-        kafe: parseFloat(get('kafe'))||0, designPrice: parseFloat(get('designPrice'))||0,
+        kafe, designPrice: parseFloat(get('designPrice'))||0,
         deliveryCost: parseFloat(get('deliveryCost'))||0, graphicsCost: parseFloat(get('graphicsCost'))||0,
         paymentMethod: get('paymentMethod'), paymentDone, totalPrice: total,
         paymentStatus: paymentDone ? 'paid' : 'pending',
@@ -1417,7 +1469,7 @@ function submitOrder(e, editId) {
       firstName: get('firstName'), lastName: get('lastName'), phone: get('phone'), mobile: get('mobile'),
       productId, productName: product ? product.name : '',
       notes: get('notes'), blessing: get('blessing'),
-      kafe: parseFloat(get('kafe'))||0, designPrice: parseFloat(get('designPrice'))||0,
+      kafe, designPrice: parseFloat(get('designPrice'))||0,
       deliveryCost: parseFloat(get('deliveryCost'))||0, graphicsCost: parseFloat(get('graphicsCost'))||0,
       paymentMethod: get('paymentMethod'), paymentDone, totalPrice: total,
       paymentStatus: paymentDone ? 'paid' : 'pending',
