@@ -508,9 +508,21 @@ function payMethodLabel(m) {
 
 function formatDate(d) {
   if (!d) return '';
+  d = String(d).split('T')[0];           // חיתוך חלק השעה אם הגיע ISO מלא
   const parts = d.split('-');
-  if (parts.length === 3) return parts[2]+'/'+parts[1]+'/'+parts[0];
+  if (parts.length === 3) return parts[2].slice(0,2) + '/' + parts[1] + '/' + parts[0];
   return d;
+}
+
+// מציג שעה נקייה (HH:MM). תומך גם בערך ISO ישן (לפני תיקון הצד-שרת)
+function formatTime(t) {
+  if (!t) return '';
+  t = String(t);
+  if (t.indexOf('T') !== -1) {
+    const m = t.match(/T(\d{2}:\d{2})/);
+    return m ? m[1] : '';
+  }
+  return t;
 }
 
 function escHtml(s) {
@@ -893,7 +905,7 @@ function showOrderDetails(id) {
       <div>
         <div class="section-title" style="margin-top:0">פרטי הזמנה</div>
         <p><strong>מוצר:</strong> ${escHtml(o.productName)}</p>
-        <p><strong>תאריך משלוח:</strong> ${formatDate(o.deliveryDate)} ${o.deliveryTime}</p>
+        <p><strong>תאריך משלוח:</strong> ${formatDate(o.deliveryDate)} ${formatTime(o.deliveryTime)}</p>
         <p><strong>הערות:</strong> ${escHtml(o.notes) || '—'}</p>
         <p><strong>ברכה:</strong> ${escHtml(o.blessing) || '—'}</p>
         <p><strong>קאפה:</strong> ${escHtml(o.kafeType) || '—'}${o.kafe?` (₪${o.kafe})`:''}</p>
@@ -958,7 +970,7 @@ function showDeliveryLabel(id) {
       <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);font-size:12px;">
         <div class="dl-row"><span class="dl-key">מוצר:</span><span class="dl-val">${escHtml(o.productName)}</span></div>
         <div class="dl-row"><span class="dl-key">ברכה:</span><span class="dl-val">${escHtml(o.blessing) || '—'}</span></div>
-        <div class="dl-row"><span class="dl-key">תאריך:</span><span class="dl-val">${formatDate(o.deliveryDate)} ${o.deliveryTime}</span></div>
+        <div class="dl-row"><span class="dl-key">תאריך:</span><span class="dl-val">${formatDate(o.deliveryDate)} ${formatTime(o.deliveryTime)}</span></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1250,7 +1262,7 @@ function printOrderForm(id) {
     + '</style></head><body>'
     + '<h1>🍎 עיצוב בפרי — הזמנה ' + o.orderNum + '</h1>'
     + '<h3>📅 פרטי משלוח</h3>'
-    + '<div class="row"><span class="key">תאריך:</span><span class="val">' + (o.deliveryDate||'') + ' ' + (o.deliveryTime||'') + '</span></div>'
+    + '<div class="row"><span class="key">תאריך:</span><span class="val">' + formatDate(o.deliveryDate) + ' ' + formatTime(o.deliveryTime) + '</span></div>'
     + '<div class="row"><span class="key">עיר:</span><span class="val">' + (o.city||'') + '</span></div>'
     + '<h3>👤 פרטי לקוח</h3>'
     + '<div class="row"><span class="key">שם:</span><span class="val">' + (o.firstName||'') + ' ' + (o.lastName||'') + '</span></div>'
@@ -1300,7 +1312,7 @@ function printOrderAndDelivery(id) {
     @media print{.no-print{display:none}}`;
   const p1 = `<div class="page">
     <h1>🍎 דף עבודה לעובדות — הזמנה ${esc(o.orderNum)}</h1>
-    <div class="row"><span class="key">תאריך אספקה</span><span class="val big">${formatDate(o.deliveryDate)} ${esc(o.deliveryTime)}</span></div>
+    <div class="row"><span class="key">תאריך אספקה</span><span class="val big">${formatDate(o.deliveryDate)} ${esc(formatTime(o.deliveryTime))}</span></div>
     <div class="row"><span class="key">לקוח</span><span class="val">${esc(o.customerName)} — ${esc(o.phone || o.mobile)}</span></div>
     <h2>פרטי ההזמנה</h2>
     <div class="row"><span class="key">מוצר</span><span class="val big">${esc(o.productName)}</span></div>
@@ -1314,7 +1326,7 @@ function printOrderAndDelivery(id) {
   const senderPhone = esc(o.phone || o.mobile || '');
   const p2 = `<div class="page pagebreak">
     <h1>📦 תעודת משלוח — הזמנה ${esc(o.orderNum)}</h1>
-    <div class="row"><span class="key">תאריך</span><span class="val big">${formatDate(o.deliveryDate)} ${esc(o.deliveryTime)}</span></div>
+    <div class="row"><span class="key">תאריך</span><span class="val big">${formatDate(o.deliveryDate)} ${esc(formatTime(o.deliveryTime))}</span></div>
     <h2>פרטי השולח</h2>
     <div class="row"><span class="key">שם השולח</span><span class="val">${senderName || '—'}</span></div>
     <div class="row"><span class="key">טלפון השולח</span><span class="val">${senderPhone || '—'}</span></div>
@@ -1861,7 +1873,7 @@ function renderWork() {
               <td>${escHtml(o.lastName)} ${escHtml(o.firstName)}</td>
               <td>${escHtml(o.productName)}</td>
               <td>${formatDate(o.deliveryDate)}</td>
-              <td>${o.deliveryTime||''}</td>
+              <td>${formatTime(o.deliveryTime)}</td>
               <td style="max-width:150px;font-size:12px">${escHtml(o.blessing)}</td>
               <td style="max-width:150px;font-size:12px">${escHtml(o.notes)}</td>
               <td class="check-cell">
