@@ -1215,7 +1215,7 @@ function renderOrderForm(editId) {
 
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);flex-wrap:wrap;">
         <button type="button" class="btn btn-outline" data-page="orders">ביטול</button>
-        ${isEdit ? `<button type="button" class="btn btn-gold" onclick="printOrderAndDelivery(${editId})">🖨 הדפס (2 דפים)</button>` : ''}
+        ${isEdit ? `<button type="button" class="btn btn-gold" onclick="printOrderAndDelivery(${editId})">🖨 הדפס הזמנה</button>` : ''}
         <button type="submit" class="btn btn-primary" id="submit-order-btn">💾 ${isEdit ? 'שמור שינויים' : 'צור הזמנה'}</button>
       </div>
       <datalist id="dl-cities">${IL_CITIES.map(c=>`<option value="${escHtml(c)}"></option>`).join('')}</datalist>
@@ -1343,57 +1343,104 @@ function printOrderForm(id) {
     + '<scr' + 'ipt>window.print();</scr' + 'ipt></body></html>');
 }
 
-// הדפסת 2 דפים: (1) דף עבודה לעובדות, (2) תעודת משלוח למשלוחן
+// הדפסת ההזמנה — דף אחד: למעלה טופס הזמנה, למטה תעודת משלוח (בסגנון הטופס הפיזי)
 function printOrderAndDelivery(id) {
   const o = DB.orders.find(x => x.id === id);
   if (!o) return;
   const esc = s => (s == null ? '' : String(s));
+  const cb  = (label, on) => `<span class="cbx">${on ? '☑' : '☐'} ${label}</span>`;
+  const pm = o.paymentMethod;
   const win = window.open('', '_blank');
-  const css = `body{font-family:Arial;direction:rtl;color:#222;margin:0}
-    .page{padding:30px 36px;min-height:95vh;box-sizing:border-box}
-    .pagebreak{page-break-before:always}
-    h1{color:#3E5C1A;border-bottom:3px solid #B89A28;padding-bottom:8px;margin:0 0 16px}
-    h2{color:#3E5C1A;font-size:17px;margin:18px 0 4px}
-    .badge{display:inline-block;background:#3E5C1A;color:#fff;border-radius:6px;padding:3px 12px;font-size:14px}
-    .row{display:flex;gap:14px;padding:6px 0;border-bottom:1px dashed #ddd}
-    .key{font-weight:700;min-width:120px;color:#555}
-    .val{flex:1;font-size:15px}
-    .big{font-size:20px;font-weight:800}
-    .flag{display:inline-block;background:#FBF3D0;border:1px solid #B89A28;color:#7a6410;border-radius:6px;padding:5px 12px;margin:8px 6px 0 0;font-weight:700}
+  const css = `*{box-sizing:border-box}
+    body{font-family:Arial;direction:rtl;color:#000;margin:0;font-size:13px}
+    .page{padding:16px 24px}
+    .title{font-weight:800;font-size:18px;border-bottom:2px solid #000;padding-bottom:4px;margin:0 0 8px}
+    .line{margin:5px 0;display:flex;flex-wrap:wrap;gap:4px 20px;align-items:baseline}
+    .fld{display:inline-flex;gap:5px;align-items:baseline}
+    .lbl{font-weight:700;white-space:nowrap}
+    .v{border-bottom:1px solid #000;min-width:80px;padding:0 4px;display:inline-block}
+    .vlong{flex:1;min-width:220px;border-bottom:1px solid #000;padding:0 4px}
+    .section{font-weight:700;margin:8px 0 2px;color:#3E5C1A}
+    .cbx{white-space:nowrap}
+    .hr{border:0;border-top:1px dashed #888;margin:16px 0 10px}
+    .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:6px}
+    .brand{font-weight:800;font-size:19px;color:#3E5C1A}
+    .contact{font-size:10.5px;text-align:left;line-height:1.45;color:#333}
+    .flag{font-weight:700;color:#7a6410}
     @media print{.no-print{display:none}}`;
-  const p1 = `<div class="page">
-    <h1>🍎 דף עבודה לעובדות — הזמנה ${esc(o.orderNum)}</h1>
-    <div class="row"><span class="key">תאריך אספקה</span><span class="val big">${formatDate(o.deliveryDate)} ${esc(formatTime(o.deliveryTime))}</span></div>
-    <div class="row"><span class="key">לקוח</span><span class="val">${esc(o.customerName)} — ${esc(o.phone || o.mobile)}</span></div>
-    <h2>פרטי ההזמנה</h2>
-    <div class="row"><span class="key">מוצר</span><span class="val big">${esc(o.productName)}</span></div>
-    <div class="row"><span class="key">מוצרים באריזה</span><span class="val"><span class="badge">${esc(o.kashrut || 'פרווה')}</span></span></div>
-    <div class="row"><span class="key">קאפה / הדפסה</span><span class="val">${esc(o.kafeType || '—')}</span></div>
-    <div class="row"><span class="key">ברכה</span><span class="val">${esc(o.blessing || '—')}</span></div>
-    <div class="row"><span class="key">גרפיקת ברכה</span><span class="val big">${esc(o.blessingGraphic || '—')}${o.blessingCat ? ' (' + esc(o.blessingCat) + ')' : ''}</span></div>
-    <div class="row"><span class="key">הערות</span><span class="val">${esc(o.notes || '—')}</span></div>
-    <div>${o.saveForEnd ? '<span class="flag">⏳ לשמור לסוף האירוע</span>' : ''}${o.setupAtEvent ? '<span class="flag">🏗 הקמה באירוע</span>' : ''}</div>
+  const venueLine = (o.destType && o.destType !== 'home' && o.destType !== 'pickup' && (o.venueName || o.room || o.department))
+    ? `<div class="line"><span class="fld"><span class="lbl">${destLabel(o)}:</span><span class="v">${esc(o.venueName)}</span></span>${o.department ? `<span class="fld"><span class="lbl">מחלקה:</span><span class="v">${esc(o.department)}</span></span>` : ''}${o.room ? `<span class="fld"><span class="lbl">חדר:</span><span class="v">${esc(o.room)}</span></span>` : ''}</div>`
+    : (o.destType === 'pickup' ? `<div class="line"><strong>איסוף עצמי מהחנות</strong></div>` : '');
+  const flags = (o.saveForEnd ? '<span class="flag">⏳ לשמור לסוף האירוע&nbsp;&nbsp;</span>' : '') + (o.setupAtEvent ? '<span class="flag">🏗 הקמה/סגירה באירוע</span>' : '');
+
+  const html = `<div class="page">
+    <div class="title">טופס הזמנה מס׳ ${esc(o.orderNum)}</div>
+    <div class="line">
+      <span class="fld"><span class="lbl">תאריך למשלוח:</span><span class="v">${formatDate(o.deliveryDate)}</span></span>
+      <span class="fld"><span class="lbl">לשעה:</span><span class="v">${esc(formatTime(o.deliveryTime))}</span></span>
+      <span class="fld"><span class="lbl">לעיר:</span><span class="v">${esc(o.city)}</span></span>
+    </div>
+    <div class="line">
+      <span class="fld"><span class="lbl">שם הלקוח:</span><span class="v">${esc(o.customerName)}</span></span>
+      <span class="fld"><span class="lbl">טל׳:</span><span class="v">${esc(o.phone)}</span></span>
+      <span class="fld"><span class="lbl">נייד:</span><span class="v">${esc(o.mobile)}</span></span>
+    </div>
+    <div class="line"><span class="fld" style="flex:1"><span class="lbl">דגם:</span><span class="vlong">${esc(o.productName)}</span></span></div>
+    <div class="line"><span class="fld" style="flex:1"><span class="lbl">הערות:</span><span class="vlong">${esc(o.notes)}</span></span></div>
+    <div class="line"><span class="fld" style="flex:1"><span class="lbl">ברכה:</span><span class="vlong">${esc(o.blessing)}</span></span></div>
+    <div class="line"><span class="fld" style="flex:1"><span class="lbl">גרפיקה:</span><span class="vlong">${esc(o.blessingGraphic)}${o.blessingCat ? ' (' + esc(o.blessingCat) + ')' : ''}</span></span></div>
+    <div class="line">
+      <span class="fld"><span class="lbl">קאפה:</span><span class="v">${esc(o.kafeType)}${o.kafeSize ? ' ' + esc(o.kafeSize) : ''}</span></span>
+      <span class="fld"><span class="lbl">מוצרים באריזה:</span><span class="v">${esc(o.kashrut)}</span></span>
+    </div>
+    <div class="section">תשלום</div>
+    <div class="line">
+      <span class="fld"><span class="lbl">מחיר עיצוב:</span><span class="v">${esc(o.designPrice || 0)}</span></span>
+      <span class="fld"><span class="lbl">קאפה:</span><span class="v">${esc(o.kafe || 0)}</span></span>
+      <span class="fld"><span class="lbl">משלוח:</span><span class="v">${esc(o.deliveryCost || 0)}</span></span>
+      <span class="fld"><span class="lbl">גרפיקה:</span><span class="v">${esc(o.graphicsCost || 0)}</span></span>
+      <span class="fld"><span class="lbl">סה״כ:</span><span class="v"><b>${esc((o.totalPrice || 0).toLocaleString())}</b></span></span>
+    </div>
+    <div class="line">
+      ${cb('מוסדי', pm === 'institutional')} ${cb('מזומן', pm === 'cash')} ${cb('העברה', pm === 'transfer')} ${cb('אשראי', pm === 'credit')} ${cb('שיק', pm === 'check')}
+      <span class="fld"><span class="lbl">בוצע תשלום:</span> ${o.paymentDone ? '☑' : '☐'}</span>
+    </div>
+    <div class="line"><span class="fld" style="flex:1"><span class="lbl">חשבונית על שם:</span><span class="vlong">${esc(o.customerName)}</span></span></div>
+
+    <hr class="hr">
+
+    <div class="dhead">
+      <div class="title" style="border:0;margin:0">תעודת משלוח מס׳ ${esc(o.orderNum)}</div>
+      <div>
+        <div class="brand">🍎 עיצוב בפרי</div>
+        <div class="contact">כתובת: חיי אדם 40, י-ם · טל: 02-6273330 · ואטסאפ: 0504152450<br>specialib10@gmail.com · www.specialib.com</div>
+      </div>
+    </div>
+    <div class="line"><span class="fld" style="flex:1"><span class="lbl">למשפחת:</span><span class="vlong">${esc(o.deliveryTo || o.customerName)}</span></span></div>
+    <div class="line">
+      <span class="fld" style="flex:1"><span class="lbl">כתובת:</span><span class="v" style="min-width:160px">${esc([o.city, o.neighborhood, o.address, o.houseNum].filter(Boolean).join(' '))}</span></span>
+      <span class="fld"><span class="lbl">כניסה:</span><span class="v">${esc(o.entrance)}</span></span>
+      <span class="fld"><span class="lbl">קומה:</span><span class="v">${esc(o.floor)}</span></span>
+      <span class="fld"><span class="lbl">דירה:</span><span class="v">${esc(o.apt)}</span></span>
+    </div>
+    ${venueLine}
+    <div class="line">
+      <span class="fld"><span class="lbl">שם השולח:</span><span class="v">${esc(o.customerName)}</span></span>
+      <span class="fld"><span class="lbl">טלפון:</span><span class="v">${esc(o.phone)}</span></span>
+      <span class="fld"><span class="lbl">נייד:</span><span class="v">${esc(o.mobile)}</span></span>
+    </div>
+    <div class="line">
+      <span class="fld"><span class="lbl">שם המקבל:</span><span class="v">${esc(o.receiverName)}</span></span>
+      <span class="fld"><span class="lbl">טלפון:</span><span class="v">${esc(o.receiverPhone)}</span></span>
+      <span class="fld"><span class="lbl">נייד:</span><span class="v">${esc(o.receiverMobile)}</span></span>
+    </div>
+    <div class="line"><span class="fld" style="flex:1"><span class="lbl">הערות למשלוחן:</span><span class="vlong">${esc(o.deliveryNotes)}</span></span></div>
+    ${flags ? `<div class="line">${flags}</div>` : ''}
   </div>`;
-  const senderName = esc(o.customerName || ((o.firstName||'') + ' ' + (o.lastName||'')).trim());
-  const senderPhone = esc(o.phone || o.mobile || '');
-  const p2 = `<div class="page pagebreak">
-    <h1>📦 תעודת משלוח — הזמנה ${esc(o.orderNum)}</h1>
-    <div class="row"><span class="key">תאריך</span><span class="val big">${formatDate(o.deliveryDate)} ${esc(formatTime(o.deliveryTime))}</span></div>
-    <h2>פרטי השולח</h2>
-    <div class="row"><span class="key">שם השולח</span><span class="val">${senderName || '—'}</span></div>
-    <div class="row"><span class="key">טלפון השולח</span><span class="val">${senderPhone || '—'}</span></div>
-    <h2>יעד ומקבל</h2>
-    <div class="row"><span class="key">יעד</span><span class="val">${destLabel(o)}</span></div>
-    <div class="row"><span class="key">כתובת</span><span class="val big">${esc(destSummary(o))}</span></div>
-    <div class="row"><span class="key">שם מקבל</span><span class="val">${esc(o.receiverName || o.customerName)}</span></div>
-    <div class="row"><span class="key">טלפון מקבל</span><span class="val big">${esc(o.receiverPhone || '')}${o.receiverMobile ? ' / ' + esc(o.receiverMobile) : ''}</span></div>
-    <div class="row"><span class="key">מוצר</span><span class="val">${esc(o.productName)} (${esc(o.kashrut || 'פרווה')})</span></div>
-    <div class="row"><span class="key">הערות למשלוח</span><span class="val">${esc(o.deliveryNotes || '—')}</span></div>
-    <div>${o.saveForEnd ? '<span class="flag">⏳ לשמור לסוף האירוע</span>' : ''}${o.setupAtEvent ? '<span class="flag">🏗 המשלוחן מקים באירוע</span>' : ''}</div>
-  </div>`;
+
   win.document.write('<html dir="rtl"><head><meta charset="UTF-8"><title>הזמנה ' + esc(o.orderNum) + '</title><style>' + css + '</style></head><body>'
-    + p1 + p2
-    + '<div class="no-print" style="text-align:center;padding:16px"><button onclick="window.print()" style="padding:12px 30px;background:#3E5C1A;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer">🖨 הדפס 2 דפים</button></div>'
+    + html
+    + '<div class="no-print" style="text-align:center;padding:16px"><button onclick="window.print()" style="padding:12px 30px;background:#3E5C1A;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer">🖨 הדפס</button></div>'
     + '<scr' + 'ipt>window.print();</scr' + 'ipt></body></html>');
 }
 
@@ -1555,7 +1602,7 @@ function submitOrder(e, editId) {
     else toast('הזמנה נוצרה ✅ — עברה למעקב גביה');
     // Ask to print
     setTimeout(() => {
-      if (confirm('הזמנה ' + newOrder.orderNum + ' נוצרה! להדפיס דף עבודה + תעודת משלוח?')) {
+      if (confirm('הזמנה ' + newOrder.orderNum + ' נוצרה! להדפיס את ההזמנה?')) {
         printOrderAndDelivery(newOrder.id);
       }
     }, 300);
