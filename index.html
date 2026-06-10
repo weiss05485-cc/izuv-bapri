@@ -1048,6 +1048,7 @@ function renderOrderForm(editId) {
         <div class="section-title">📅 פרטי משלוח</div>
         <div class="field"><label>תאריך למשלוח *</label><input type="date" name="deliveryDate" value="${v('deliveryDate')}" required></div>
         <div class="field"><label>שעה</label><input type="time" name="deliveryTime" value="${v('deliveryTime','10:00')}"></div>
+        <div class="field"><label>אזור</label><input type="text" name="area" value="${v('area')}" placeholder="אזור חלוקה"></div>
 
         <div class="section-title">👤 פרטי הלקוח</div>
         <div class="field" style="grid-column:1/-1;position:relative">
@@ -1080,6 +1081,8 @@ function renderOrderForm(editId) {
             ${DB.products.map(p => `<option value="${p.id}" data-price="${p.price}" ${v('productId')==p.id?'selected':''}>${escHtml(p.name)} — ₪${p.price}</option>`).join('')}
           </select>
         </div>
+        <div class="field"><label>כמות</label><input type="number" name="quantity" value="${v('quantity',1)}" min="1"></div>
+        <div class="field"><label>סוג מגש</label><input type="text" name="trayType" value="${v('trayType')}" placeholder="לדוגמה: זכוכית / חד-פעמי / קלקר"></div>
         <div class="field"><label>מוצרים באריזה</label>
           <select name="kashrut">
             <option value="פרווה" ${v('kashrut','פרווה')==='פרווה'?'selected':''}>פרווה</option>
@@ -1380,13 +1383,18 @@ function printOrderAndDelivery(id) {
       <span class="fld"><span class="lbl">תאריך למשלוח:</span><span class="v">${formatDate(o.deliveryDate)}</span></span>
       <span class="fld"><span class="lbl">לשעה:</span><span class="v">${esc(formatTime(o.deliveryTime))}</span></span>
       <span class="fld"><span class="lbl">לעיר:</span><span class="v">${esc(o.city)}</span></span>
+      <span class="fld"><span class="lbl">אזור:</span><span class="v">${esc(o.area)}</span></span>
     </div>
     <div class="line">
       <span class="fld"><span class="lbl">שם הלקוח:</span><span class="v">${esc(o.customerName)}</span></span>
       <span class="fld"><span class="lbl">טל׳:</span><span class="v">${esc(o.phone)}</span></span>
       <span class="fld"><span class="lbl">נייד:</span><span class="v">${esc(o.mobile)}</span></span>
     </div>
-    <div class="line"><span class="fld" style="flex:1"><span class="lbl">דגם:</span><span class="vlong">${esc(o.productName)}</span></span></div>
+    <div class="line">
+      <span class="fld" style="flex:1"><span class="lbl">דגם:</span><span class="vlong">${esc(o.productName)}</span></span>
+      <span class="fld"><span class="lbl">כמות:</span><span class="v">${esc(o.quantity || '1')}</span></span>
+      <span class="fld"><span class="lbl">סוג מגש:</span><span class="v">${esc(o.trayType)}</span></span>
+    </div>
     <div class="line"><span class="fld" style="flex:1"><span class="lbl">הערות:</span><span class="vlong">${esc(o.notes)}</span></span></div>
     <div class="line"><span class="fld" style="flex:1"><span class="lbl">ברכה:</span><span class="vlong">${esc(o.blessing)}</span></span></div>
     <div class="line"><span class="fld" style="flex:1"><span class="lbl">גרפיקה:</span><span class="vlong">${esc(o.blessingGraphic)}${o.blessingCat ? ' (' + esc(o.blessingCat) + ')' : ''}</span></span></div>
@@ -1536,6 +1544,9 @@ function submitOrder(e, editId) {
   const extraFields = {
     kafeType,
     kafeSize,
+    quantity: get('quantity') || '1',
+    trayType: get('trayType'),
+    area: get('area'),
     blessingCat: get('blessingCat'),
     blessingGraphic: get('blessingGraphic'),
     blessingUrl: blessingUrl(get('blessingCat'), get('blessingGraphic')),
@@ -1963,12 +1974,16 @@ function renderWork() {
           <th>שעה</th>
           <th>ברכה</th>
           <th>הערות</th>
+          <th>קאפה</th>
+          <th>סוג מגש</th>
+          <th>כמות</th>
+          <th>אזור</th>
           <th style="text-align:center;background:#C59A20">קלקר</th>
           <th style="text-align:center;background:#6B8F2A">פירות</th>
           <th style="text-align:center;background:#3E5C1A">סגירה</th>
         </tr>
         ${readyOrders.length === 0
-          ? `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted)">אין הזמנות לביצוע כרגע 🎉</td></tr>`
+          ? `<tr><td colspan="14" style="text-align:center;padding:30px;color:var(--text-muted)">אין הזמנות לביצוע כרגע 🎉</td></tr>`
           : readyOrders.map(o => `<tr id="work-row-${o.id}" class="${o.colklarDone && o.fruitsDone && o.closeDone ? 'done-row' : ''}">
               <td><strong>${escHtml(o.orderNum)}</strong></td>
               <td>${escHtml(o.lastName)} ${escHtml(o.firstName)}</td>
@@ -1977,6 +1992,10 @@ function renderWork() {
               <td>${formatTime(o.deliveryTime)}</td>
               <td style="max-width:150px;font-size:12px">${escHtml(o.blessing)}</td>
               <td style="max-width:150px;font-size:12px">${escHtml(o.notes)}</td>
+              <td>${escHtml(o.kafeType)}</td>
+              <td>${escHtml(o.trayType)}</td>
+              <td style="text-align:center">${escHtml(o.quantity)||'1'}</td>
+              <td>${escHtml(o.area)}</td>
               <td class="check-cell">
                 <button class="check-btn ${o.colklarDone?'taken':''}" onclick="workToggle(${o.id},'colklarDone','קלקר')" title="${o.colklarDone?'לקחה':'סמן לקחה'}">
                   ${o.colklarDone ? '✓' : ''}
