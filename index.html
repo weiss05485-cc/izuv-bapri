@@ -302,6 +302,8 @@ tr:last-child td { border-bottom: none; }
       <a data-page="products"><span class="icon">🍎</span> מוצרים</a>
       <a data-page="collection"><span class="icon">💰</span> גביה</a>
       <a data-page="work"><span class="icon">🏭</span> מסך עבודה</a>
+      <a data-page="expenses"><span class="icon">💸</span> הוצאות</a>
+      <a data-page="pnl"><span class="icon">📈</span> רווח והפסד</a>
     </nav>
     <div class="version">גרסה 1.0 | עיצוב בפרי</div>
   </div>
@@ -332,6 +334,7 @@ tr:last-child td { border-bottom: none; }
 const DB = {
   get customers() { return typeof CUSTOMERS_DB !== 'undefined' ? CUSTOMERS_DB : this._customers || []; },
   set customers(v) { this._customers = v; },
+  expenses: [],
   employees: typeof EMPLOYEES_DB !== "undefined" ? EMPLOYEES_DB : [],
   products: [
     { id: 1, sku: "102", name: "סל פירות מק\"ט 102", content: "פירות עונתיים בעיצוב מיוחד", length: 0, width: 0, weight: 0, price: 300, price_usd: 74, catalog: "כללי 2026" },
@@ -614,6 +617,8 @@ function render() {
     products: 'ניהול מוצרים',
     collection: 'ניהול גביה',
     work: 'מסך ניהול עבודה',
+    expenses: 'ניהול הוצאות',
+    pnl: 'רווח והפסד',
   };
   if (!canSee(currentPage)) currentPage = 'orders';  // אכיפת הרשאות
   applyRoleToNav();
@@ -630,6 +635,8 @@ function render() {
     case 'work':        content.innerHTML = renderWork(); break;
     case 'employees':   content.innerHTML = renderEmployees(); break;
     case 'reports':     content.innerHTML = renderReports(); break;
+    case 'expenses':    content.innerHTML = renderExpenses(); break;
+    case 'pnl':         content.innerHTML = renderPnl(); break;
     default:            content.innerHTML = '<p>עמוד לא נמצא</p>';
   }
   bindEvents();
@@ -1914,6 +1921,129 @@ function deleteProduct(id) {
   render();
 }
 
+// ===================== EXPENSES (הוצאות) =====================
+const EXP_SHEET = 'הוצאות_מערכת';
+const EXP_CATEGORIES = ['ספקים','שכר עובדים','שכירות','רכב / דלק','חומרי גלם','שיווק','ציוד','אחר'];
+
+function renderExpenses() {
+  const exps = [...(DB.expenses||[])].sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
+  const total = exps.reduce((s,e)=> s + (parseFloat(e.amount)||0), 0);
+  return `
+  <div class="card">
+    <div class="card-header">
+      <h2>💸 הוצאות — סה"כ ₪${total.toLocaleString()}</h2>
+      <button class="btn btn-primary btn-sm" onclick="showAddExpense()">+ הוצאה חדשה</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>תאריך</th><th>קטגוריה</th><th>ספק / תיאור</th><th>סכום</th><th>הערה</th><th>פעולות</th></tr>
+        ${exps.length===0 ? `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">אין הוצאות עדיין — לחץ "+ הוצאה חדשה"</td></tr>` :
+          exps.map(e=>`<tr>
+            <td>${formatDate(e.date)}</td>
+            <td>${escHtml(e.category)}</td>
+            <td>${escHtml(e.supplier)}</td>
+            <td style="font-weight:700;color:#C0392B">₪${(parseFloat(e.amount)||0).toLocaleString()}</td>
+            <td style="font-size:12px">${escHtml(e.notes)}</td>
+            <td style="white-space:nowrap">
+              <button class="btn btn-outline btn-sm" onclick="showAddExpense(${e.id})">✏️</button>
+              <button class="btn btn-red btn-sm" onclick="deleteExpense(${e.id})">🗑</button>
+            </td>
+          </tr>`).join('')}
+      </table>
+    </div>
+  </div>`;
+}
+
+function showAddExpense(id) {
+  const e = id ? (DB.expenses||[]).find(x=>x.id===id) : null;
+  const v = (f,d='')=> e ? (e[f]||d) : d;
+  const today = new Date().toISOString().slice(0,10);
+  showModal(`
+    <div class="modal-header"><h2>${e?'✏️ עריכת הוצאה':'➕ הוצאה חדשה'}</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <form onsubmit="saveExpense(event,${id||'null'})">
+      <div class="form-grid">
+        <div class="field"><label>תאריך *</label><input type="date" name="date" value="${v('date',today)}" required></div>
+        <div class="field"><label>קטגוריה</label><select name="category">${EXP_CATEGORIES.map(c=>`<option ${v('category')===c?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="field"><label>ספק / תיאור</label><input name="supplier" value="${escHtml(v('supplier'))}"></div>
+        <div class="field"><label>סכום ₪ *</label><input type="number" step="0.01" name="amount" value="${v('amount',0)}" required></div>
+        <div class="field" style="grid-column:1/-1"><label>הערה</label><input name="notes" value="${escHtml(v('notes'))}"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">ביטול</button>
+        <button type="submit" class="btn btn-primary">💾 שמור</button>
+      </div>
+    </form>`);
+}
+
+function saveExpense(ev, id) {
+  ev.preventDefault();
+  const fd = new FormData(ev.target);
+  const data = { date: fd.get('date'), category: fd.get('category'), supplier: fd.get('supplier')||'', amount: parseFloat(fd.get('amount'))||0, notes: fd.get('notes')||'' };
+  if (id) {
+    const i = DB.expenses.findIndex(x=>x.id===id);
+    if (i>=0) { data.id = id; Object.assign(DB.expenses[i], data); }
+    toast('הוצאה עודכנה ✅');
+  } else {
+    data.id = Date.now();
+    DB.expenses.push(data);
+    toast('הוצאה נוספה ✅');
+  }
+  // שמירה לגיליון — תאריך עם גרש מוביל כדי שיישמר כטקסט (בלי הזזת אזור-זמן)
+  const row = {...data};
+  if (row.date && String(row.date).charAt(0) !== "'") row.date = "'" + row.date;
+  gsSaveRow(EXP_SHEET, row);
+  closeModal();
+  render();
+}
+
+function deleteExpense(id) {
+  if (!confirm('למחוק הוצאה זו?')) return;
+  DB.expenses = DB.expenses.filter(x=>x.id!==id);
+  gsDeleteRow(EXP_SHEET, id);
+  toast('הוצאה נמחקה');
+  render();
+}
+
+// ===================== רווח והפסד (P&L) =====================
+function renderPnl() {
+  const monthOf = d => String(d||'').split('T')[0].slice(0,7); // YYYY-MM
+  const map = {};
+  (DB.orders||[]).forEach(o => {
+    const m = monthOf(o.deliveryDate || o.orderDate || o.createdAt);
+    if (!m) return; map[m] = map[m] || {inc:0, exp:0}; map[m].inc += (parseFloat(o.totalPrice)||0);
+  });
+  (DB.expenses||[]).forEach(e => {
+    const m = monthOf(e.date);
+    if (!m) return; map[m] = map[m] || {inc:0, exp:0}; map[m].exp += (parseFloat(e.amount)||0);
+  });
+  const months = Object.keys(map).sort().reverse();
+  const totInc = months.reduce((s,m)=>s+map[m].inc,0);
+  const totExp = months.reduce((s,m)=>s+map[m].exp,0);
+  const totProfit = totInc - totExp;
+  const fmt = n => '₪' + Math.round(n).toLocaleString();
+  const MN = ['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const monthName = m => { const p = m.split('-'); return (MN[parseInt(p[1])]||p[1]) + ' ' + p[0]; };
+  return `
+  <div class="stat-grid" style="margin-bottom:16px">
+    <div class="stat-card"><div class="label">סה"כ הכנסות</div><div class="value" style="color:var(--green-dark)">${fmt(totInc)}</div></div>
+    <div class="stat-card red"><div class="label">סה"כ הוצאות</div><div class="value">${fmt(totExp)}</div></div>
+    <div class="stat-card"><div class="label">רווח / הפסד</div><div class="value" style="color:${totProfit>=0?'var(--green-dark)':'#C0392B'}">${fmt(totProfit)}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h2>📈 רווח והפסד לפי חודש</h2></div>
+    <div class="table-wrap"><table>
+      <tr><th>חודש</th><th>הכנסות</th><th>הוצאות</th><th>רווח / הפסד</th></tr>
+      ${months.length===0 ? `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text-muted)">אין נתונים עדיין</td></tr>` :
+        months.map(m=>{ const p = map[m].inc - map[m].exp; return `<tr>
+          <td><strong>${monthName(m)}</strong></td>
+          <td style="color:var(--green-dark)">${fmt(map[m].inc)}</td>
+          <td style="color:#C0392B">${fmt(map[m].exp)}</td>
+          <td style="font-weight:800;color:${p>=0?'var(--green-dark)':'#C0392B'}">${fmt(p)}</td>
+        </tr>`; }).join('')}
+    </table></div>
+  </div>`;
+}
+
 // ===================== COLLECTION =====================
 function renderCollection() {
   const pending = DB.orders.filter(o => o.paymentStatus === 'pending');
@@ -2302,6 +2432,7 @@ function gsSave(action, data) {
 
     addField('action', action);
     addField('data', JSON.stringify(data));
+    if (arguments[2]) { const ex = arguments[2]; Object.keys(ex).forEach(k => addField(k, ex[k])); }
 
     // Create hidden iframe if not exists
     if (!document.getElementById('_gsframe')) {
@@ -2321,6 +2452,11 @@ function gsSave(action, data) {
 }
 
 async function gsPost(action, data) { return gsGet(action + '&data=' + encodeURIComponent(JSON.stringify(data))); }
+
+// ===== טבלאות גנריות (הוצאות וכל מודול עתידי) =====
+async function gsGetTable(sheet)   { return await gsGet('getTable&sheet=' + encodeURIComponent(sheet)); }
+function gsSaveRow(sheet, data)    { gsSave('saveRow', data, {sheet}); }
+function gsDeleteRow(sheet, id)    { gsGet('deleteTableRow&sheet=' + encodeURIComponent(sheet) + '&id=' + encodeURIComponent(id)).catch(()=>{}); }
 
 function parseOrder(o) {
   return {...o, id:parseInt(o.id)||o.id,
@@ -2371,7 +2507,16 @@ async function loadFromGoogleSheets() {
       changed = true;
     }
 
-    const msg = `✅ נטען: ${all.orders?.length||0} הזמנות, ${all.customers?.length||0} לקוחות, ${all.products?.length||0} מוצרים, ${all.tasks?.length||0} משימות`;
+    // Expenses (טבלה גנרית נפרדת)
+    try {
+      const exp = await gsGetTable('הוצאות_מערכת');
+      if (Array.isArray(exp)) {
+        DB.expenses = exp.map(x => ({...x, id: parseInt(x.id)||x.id, amount: parseFloat(x.amount)||0}));
+        changed = true;
+      }
+    } catch(e) { console.warn('expenses load failed', e); }
+
+    const msg = `✅ נטען: ${all.orders?.length||0} הזמנות, ${all.customers?.length||0} לקוחות, ${all.products?.length||0} מוצרים`;
     toast(msg);
     if (changed) render();
   } catch(e) {
