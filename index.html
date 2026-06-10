@@ -638,6 +638,8 @@ function render() {
   if (_dt) setDest(_dt.value || 'home');
   if (document.getElementById('f-kafe')) onKafeChange();
   if (document.getElementById('f-bcat')) updateBlessingNames();
+  const _pr = document.getElementById('f-product');
+  if (_pr) onProductChange(_pr);
 }
 
 // ===================== HISTORICAL DATA (Google Sheets) =====================
@@ -1076,13 +1078,15 @@ function renderOrderForm(editId) {
 
         <div class="section-title">🍎 פרטי המוצר</div>
         <div class="field"><label>דגם / מוצר *</label>
-          <select name="productId" onchange="updateProductPrice(this)" required>
+          <select name="productId" id="f-product" onchange="onProductChange(this)" required>
             <option value="">— בחר מוצר —</option>
             ${DB.products.map(p => `<option value="${p.id}" data-price="${p.price}" ${v('productId')==p.id?'selected':''}>${escHtml(p.name)} — ₪${p.price}</option>`).join('')}
+            <option value="custom" ${v('productId')==='custom'?'selected':''}>✏️ התאמה אישית</option>
           </select>
         </div>
-        <div class="field"><label>כמות</label><input type="number" name="quantity" value="${v('quantity',1)}" min="1"></div>
-        <div class="field"><label>סוג מגש</label><input type="text" name="trayType" value="${v('trayType')}" placeholder="לדוגמה: זכוכית / חד-פעמי / קלקר"></div>
+        <div class="field custom-prod" style="display:none"><label>תיאור מוצר מותאם</label><input type="text" name="customProductName" value="${v('productId')==='custom'?escHtml(v('productName')):''}" placeholder="מה כולל המוצר המותאם"></div>
+        <div class="field custom-prod" style="display:none"><label>כמות</label><input type="number" name="quantity" value="${v('quantity',1)}" min="1"></div>
+        <div class="field custom-prod" style="display:none"><label>סוג מגש</label><input type="text" name="trayType" value="${v('trayType')}" placeholder="לדוגמה: זכוכית / חד-פעמי / קלקר"></div>
         <div class="field"><label>מוצרים באריזה</label>
           <select name="kashrut">
             <option value="פרווה" ${v('kashrut','פרווה')==='פרווה'?'selected':''}>פרווה</option>
@@ -1455,10 +1459,18 @@ function printOrderAndDelivery(id) {
 const _origNavigateAfterOrder = navigate;
 
 function updateProductPrice(sel) {
+  if (sel.value === 'custom') return;  // מחיר מותאם נשאר ידני
   const opt = sel.options[sel.selectedIndex];
   const price = opt.dataset.price || 0;
   const dp = document.getElementById('f-designPrice');
   if (dp) { dp.value = price; calcTotal(); }
+}
+
+// בחירת מוצר — מציג שדות "התאמה אישית" (תיאור/כמות/סוג מגש) רק כשנבחר מותאם
+function onProductChange(sel) {
+  updateProductPrice(sel);
+  const custom = sel.value === 'custom';
+  document.querySelectorAll('.custom-prod').forEach(el => el.style.display = custom ? '' : 'none');
 }
 
 // קאפה בהתאמה אישית — מציג/מסתיר שדות מידות+מחיר
@@ -1523,8 +1535,11 @@ function submitOrder(e, editId) {
   const fd = new FormData(form);
   const get = k => fd.get(k) || '';
 
-  const productId = parseInt(get('productId'));
-  const product = DB.products.find(p => p.id === productId);
+  const rawProductId = get('productId');
+  const isCustomProduct = rawProductId === 'custom';
+  const productId = isCustomProduct ? 'custom' : parseInt(rawProductId);
+  const product = isCustomProduct ? null : DB.products.find(p => p.id === productId);
+  const productName = isCustomProduct ? get('customProductName') : (product ? product.name : '');
   const paymentDone = get('paymentDone') === '1';
   // קאפה — מחיר + תווית (כולל "התאמה אישית" עם מידות ומחיר ידני)
   const kafeSel = document.getElementById('f-kafe');
@@ -1569,7 +1584,7 @@ function submitOrder(e, editId) {
         deliveryDate: get('deliveryDate'), deliveryTime: get('deliveryTime'), city: get('city'),
         firstName: get('firstName'), lastName: get('lastName'), phone: get('phone'), mobile: get('mobile'),
         customerType: get('customerType'), customerName: get('firstName')+' '+get('lastName'),
-        productId, productName: product ? product.name : '',
+        productId, productName,
         notes: get('notes'), blessing: get('blessing'),
         kafe, designPrice: parseFloat(get('designPrice'))||0,
         deliveryCost: parseFloat(get('deliveryCost'))||0, graphicsCost: parseFloat(get('graphicsCost'))||0,
@@ -1591,7 +1606,7 @@ function submitOrder(e, editId) {
       customerType: get('customerType'),
       deliveryDate: get('deliveryDate'), deliveryTime: get('deliveryTime'), city: get('city'),
       firstName: get('firstName'), lastName: get('lastName'), phone: get('phone'), mobile: get('mobile'),
-      productId, productName: product ? product.name : '',
+      productId, productName,
       notes: get('notes'), blessing: get('blessing'),
       kafe, designPrice: parseFloat(get('designPrice'))||0,
       deliveryCost: parseFloat(get('deliveryCost'))||0, graphicsCost: parseFloat(get('graphicsCost'))||0,
@@ -1781,8 +1796,9 @@ function renderProducts() {
     </div>
     <div class="table-wrap">
       <table>
-        <tr><th>שם</th><th>תכולה</th><th>אורך</th><th>רוחב</th><th>משקל</th><th>מחיר</th><th>פעולות</th></tr>
+        <tr><th>מק"ט</th><th>שם</th><th>תכולה</th><th>אורך</th><th>רוחב</th><th>משקל</th><th>מחיר</th><th>פעולות</th></tr>
         ${DB.products.map(p => `<tr>
+          <td>${escHtml(p.sku)}</td>
           <td><strong>${escHtml(p.name)}</strong></td>
           <td>${escHtml(p.content)}</td>
           <td>${p.length} ס"מ</td>
@@ -1809,6 +1825,7 @@ function showAddProduct(id) {
     </div>
     <form onsubmit="saveProduct(event,${id||'null'})">
       <div class="form-grid">
+        <div class="field"><label>מק"ט</label><input name="sku" value="${v('sku')}"></div>
         <div class="field"><label>שם המוצר *</label><input name="name" value="${v('name')}" required></div>
         <div class="field"><label>תכולה</label><input name="content" value="${v('content')}"></div>
         <div class="field"><label>אורך (ס"מ)</label><input type="number" name="length" value="${v('length',0)}"></div>
@@ -1829,7 +1846,7 @@ function editProduct(id) { showAddProduct(id); }
 function saveProduct(e, id) {
   e.preventDefault();
   const fd = new FormData(e.target);
-  const data = { name: fd.get('name'), content: fd.get('content'), length: parseFloat(fd.get('length'))||0, width: parseFloat(fd.get('width'))||0, weight: parseFloat(fd.get('weight'))||0, price: parseFloat(fd.get('price'))||0 };
+  const data = { sku: fd.get('sku'), name: fd.get('name'), content: fd.get('content'), length: parseFloat(fd.get('length'))||0, width: parseFloat(fd.get('width'))||0, weight: parseFloat(fd.get('weight'))||0, price: parseFloat(fd.get('price'))||0 };
   let saved;
   if (id) {
     const idx = DB.products.findIndex(p => p.id === id);
