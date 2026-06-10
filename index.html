@@ -1041,6 +1041,7 @@ function renderOrderForm(editId) {
   const isEdit = !!editId;
   const o = isEdit ? DB.orders.find(x => x.id === editId) : null;
   const v = (field, def='') => o ? (o[field] || def) : def;
+  const today = new Date().toISOString().slice(0,10);
 
   return `
   <div class="card">
@@ -1048,6 +1049,8 @@ function renderOrderForm(editId) {
     <form id="order-form" onsubmit="submitOrder(event, ${editId||'null'})">
       <div class="form-grid">
         <div class="section-title">📅 פרטי משלוח</div>
+        <div class="field"><label>תאריך הזמנה</label><input type="date" name="orderDate" value="${v('orderDate', today)}"></div>
+        <div class="field"><label>תאריך הספקה</label><input type="date" name="supplyDate" value="${v('supplyDate')}"></div>
         <div class="field"><label>תאריך למשלוח *</label><input type="date" name="deliveryDate" value="${v('deliveryDate')}" required></div>
         <div class="field"><label>שעה</label><input type="time" name="deliveryTime" value="${v('deliveryTime','10:00')}"></div>
         <div class="field"><label>אזור</label><input type="text" name="area" value="${v('area')}" placeholder="אזור חלוקה"></div>
@@ -1388,6 +1391,10 @@ function printOrderAndDelivery(id) {
     <div class="order-top">
     <div class="title">טופס הזמנה מס׳ ${esc(o.orderNum)}</div>
     <div class="line">
+      <span class="fld"><span class="lbl">תאריך הזמנה:</span><span class="v">${formatDate(o.orderDate || o.createdAt)}</span></span>
+      <span class="fld"><span class="lbl">תאריך הספקה:</span><span class="v">${formatDate(o.supplyDate)}</span></span>
+    </div>
+    <div class="line">
       <span class="fld"><span class="lbl">תאריך למשלוח:</span><span class="v">${formatDate(o.deliveryDate)}</span></span>
       <span class="fld"><span class="lbl">לשעה:</span><span class="v">${esc(formatTime(o.deliveryTime))}</span></span>
       <span class="fld"><span class="lbl">לעיר:</span><span class="v">${esc(o.city)}</span></span>
@@ -1600,6 +1607,8 @@ function submitOrder(e, editId) {
     trayType,
     traysJson,
     area: get('area'),
+    orderDate: get('orderDate'),
+    supplyDate: get('supplyDate'),
     blessingCat: get('blessingCat'),
     blessingGraphic: get('blessingGraphic'),
     blessingUrl: blessingUrl(get('blessingCat'), get('blessingGraphic')),
@@ -2375,7 +2384,7 @@ function saveOrderToGS(order) {
   // שולחים תאריך/שעה עם גרש מוביל כדי ש-Google Sheets ישמור כטקסט (מונע הזזת אזור-זמן).
   // הגרש "נבלע" ע"י Sheets, אז בקריאה חוזר ערך נקי. ה-DB המקומי נשאר ללא שינוי.
   const o = Object.assign({}, order);
-  ['deliveryDate','deliveryTime','createdAt'].forEach(k => {
+  ['deliveryDate','deliveryTime','createdAt','orderDate','supplyDate'].forEach(k => {
     if (o[k] && typeof o[k] === 'string' && o[k].charAt(0) !== "'") o[k] = "'" + o[k];
   });
   gsSave('saveOrder', o);
