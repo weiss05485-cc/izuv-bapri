@@ -665,7 +665,7 @@ function render() {
   const _pr = document.getElementById('f-product');
   if (_pr) onProductChange(_pr);
   if ((currentPage === 'expenses' || currentPage === 'pnl') && !DB._expensesLoaded) loadExpenses();
-  if ((currentPage === 'staff' || currentPage === 'debts' || currentPage === 'pricing') && !DB._bizLoaded) loadBiz();
+  if ((currentPage === 'staff' || currentPage === 'debts' || currentPage === 'pricing' || currentPage === 'employees') && !DB._bizLoaded) loadBiz();
   if (currentPage === 'attendance' && !DB._attLoaded) loadAttendance();
 }
 
@@ -2778,7 +2778,29 @@ function bindEvents() {
 function renderEmployees() {
   const emps = typeof EMPLOYEES_DB !== 'undefined' ? EMPLOYEES_DB : DB.employees || [];
   const total = emps.reduce((s,e) => s+e.revenue, 0);
-  return `
+  const st = DB.staff || [];
+  const noPin = st.filter(s=>!String(s.pin||'').trim()).length;
+  const mgmtCard = `
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h2>🔑 עובדות וקודי כניסה</h2>
+      <button class="btn btn-primary btn-sm" onclick="showAddStaff()">+ עובדת חדשה</button>
+    </div>
+    ${!DB._bizLoaded ? `<div style="padding:24px;text-align:center;color:var(--text-muted)">⏳ טוען עובדות...</div>` : `
+    ${noPin?`<div style="margin:0 4px 10px;padding:8px 12px;background:#fdecea;border:1px solid #f3b4ab;border-radius:8px;color:#a3271a;font-size:13px">⚠️ ${noPin} עובדות עדיין ללא קוד כניסה — הגדירי קוד כדי שיוכלו להחתים שעון.</div>`:''}
+    <div class="table-wrap"><table>
+      <tr><th>שם העובדת</th><th>🔑 קוד כניסה</th><th>שכר/שעה</th><th>פעולות</th></tr>
+      ${st.length===0?`<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">אין עובדות — לחצי "+ עובדת חדשה"</td></tr>`:
+        st.map(e=>`<tr>
+          <td><strong>${escHtml(e.name)}</strong></td>
+          <td>${e.pin?`<code style="background:#eef5ec;padding:3px 10px;border-radius:5px;font-weight:700;letter-spacing:2px">${escHtml(String(e.pin))}</code>`:`<span style="color:var(--red);font-size:12px">לא הוגדר</span>`}</td>
+          <td>₪${e.baseRate||0}</td>
+          <td style="white-space:nowrap"><button class="btn btn-gold btn-sm" onclick="showAddStaff('${e.id}')">🔑 הגדר קוד / ערוך</button> <button class="btn btn-red btn-sm" onclick="deleteStaff('${e.id}')">🗑</button></td>
+        </tr>`).join('')}
+    </table></div>
+    <div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">הקוד משמש את העובדת להחתמת כניסה/יציאה במסך "שעון נוכחות".</div>`}
+  </div>`;
+  return mgmtCard + `
   <div class="stat-grid">
     ${emps.map(e => `
       <div class="stat-card" style="border-top-color:var(--green-mid)">
