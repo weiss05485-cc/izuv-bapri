@@ -335,6 +335,7 @@ const DB = {
   get customers() { return typeof CUSTOMERS_DB !== 'undefined' ? CUSTOMERS_DB : this._customers || []; },
   set customers(v) { this._customers = v; },
   expenses: [],
+  sales: [],
   employees: typeof EMPLOYEES_DB !== "undefined" ? EMPLOYEES_DB : [],
   products: [
     { id: 1, sku: "102", name: "סל פירות מק\"ט 102", content: "פירות עונתיים בעיצוב מיוחד", length: 0, width: 0, weight: 0, price: 300, price_usd: 74, catalog: "כללי 2026" },
@@ -1964,13 +1965,12 @@ async function loadExpenses() {
   if (DB._expensesLoading || DB._expensesLoaded) return;
   DB._expensesLoading = true;
   try {
-    const exp = await gsGetTable(EXP_SHEET);
-    if (Array.isArray(exp)) {
-      DB.expenses = exp.map(x => ({...x, id: parseInt(x.id)||x.id, amount: parseFloat(x.amount)||0}));
-      DB._expensesLoaded = true;
-      render();
-    }
-  } catch(e) { console.warn('expenses load failed', e); }
+    const [exp, sal] = await Promise.all([gsGetTable(EXP_SHEET), gsGetTable('מכירות_מערכת')]);
+    if (Array.isArray(exp)) DB.expenses = exp.map(x => ({...x, id: parseInt(x.id)||x.id, amount: parseFloat(x.amount)||0}));
+    if (Array.isArray(sal)) DB.sales = sal.map(x => ({...x, total: parseFloat(x.total)||0}));
+    DB._expensesLoaded = true;
+    render();
+  } catch(e) { console.warn('finance load failed', e); }
   DB._expensesLoading = false;
 }
 
@@ -2061,9 +2061,11 @@ function deleteExpense(id) {
 function renderPnl() {
   const monthOf = d => String(d||'').split('T')[0].slice(0,7); // YYYY-MM
   const map = {};
-  (DB.orders||[]).forEach(o => {
-    const m = monthOf(o.deliveryDate || o.orderDate || o.createdAt);
-    if (!m) return; map[m] = map[m] || {inc:0, exp:0}; map[m].inc += (parseFloat(o.totalPrice)||0);
+  // הכנסות — מהיסטוריית המכירות (אם נטענה), אחרת מההזמנות הפעילות
+  const incomeSrc = (DB.sales && DB.sales.length) ? DB.sales.map(s => ({d:s.date, a:s.total})) : (DB.orders||[]).map(o => ({d:o.deliveryDate||o.orderDate||o.createdAt, a:o.totalPrice}));
+  incomeSrc.forEach(s => {
+    const m = monthOf(s.d);
+    if (!m) return; map[m] = map[m] || {inc:0, exp:0}; map[m].inc += (parseFloat(s.a)||0);
   });
   (DB.expenses||[]).forEach(e => {
     const m = monthOf(e.date);
