@@ -304,6 +304,7 @@ tr:last-child td { border-bottom: none; }
       <a data-page="work"><span class="icon">🏭</span> מסך עבודה</a>
       <a data-page="expenses"><span class="icon">💸</span> הוצאות</a>
       <a data-page="pnl"><span class="icon">📈</span> רווח והפסד</a>
+      <a data-page="attendance"><span class="icon">🕐</span> שעון נוכחות</a>
       <a data-page="staff"><span class="icon">👷</span> צוות ושכר</a>
       <a data-page="debts"><span class="icon">💳</span> חובות ספקים</a>
       <a data-page="pricing"><span class="icon">🏷️</span> תמחור</a>
@@ -342,6 +343,7 @@ const DB = {
   staff: [],
   debts: [],
   pricing: [],
+  attendance: [],
   employees: typeof EMPLOYEES_DB !== "undefined" ? EMPLOYEES_DB : [],
   products: [
     { id: 1, sku: "102", name: "סל פירות מק\"ט 102", content: "פירות עונתיים בעיצוב מיוחד", length: 0, width: 0, weight: 0, price: 300, price_usd: 74, catalog: "כללי 2026" },
@@ -552,7 +554,7 @@ const LOGO_SRC = 'img_Im0.png';
 // סיסמת מנהל — אפשר לשנות כאן בכל עת:
 const ADMIN_PASSWORD = '12341234';
 // העמודים שהמזכירה רואה (מנהל רואה הכל):
-const SECRETARY_PAGES = ['orders','new-order','customers','work','products'];
+const SECRETARY_PAGES = ['orders','new-order','customers','work','products','attendance'];
 let userRole = localStorage.getItem('izuv_role') || 'secretary';
 
 function canSee(page) { return userRole === 'admin' || SECRETARY_PAGES.indexOf(page) !== -1; }
@@ -629,6 +631,7 @@ function render() {
     staff: 'צוות ושכר',
     debts: 'חובות ספקים',
     pricing: 'תמחור',
+    attendance: 'שעון נוכחות',
   };
   if (!canSee(currentPage)) currentPage = 'orders';  // אכיפת הרשאות
   applyRoleToNav();
@@ -650,6 +653,7 @@ function render() {
     case 'staff':       content.innerHTML = renderStaff(); break;
     case 'debts':       content.innerHTML = renderDebts(); break;
     case 'pricing':     content.innerHTML = renderPricing(); break;
+    case 'attendance':  content.innerHTML = renderAttendance(); break;
     default:            content.innerHTML = '<p>עמוד לא נמצא</p>';
   }
   bindEvents();
@@ -662,6 +666,7 @@ function render() {
   if (_pr) onProductChange(_pr);
   if ((currentPage === 'expenses' || currentPage === 'pnl') && !DB._expensesLoaded) loadExpenses();
   if ((currentPage === 'staff' || currentPage === 'debts' || currentPage === 'pricing') && !DB._bizLoaded) loadBiz();
+  if (currentPage === 'attendance' && !DB._attLoaded) loadAttendance();
 }
 
 // ===================== HISTORICAL DATA (Google Sheets) =====================
@@ -2246,6 +2251,101 @@ function renderPricing() {
         <td style="color:var(--green-dark);font-weight:700">₪${Math.round(x.profit)}</td>
         <td>${Math.round((parseFloat(x.profitPct)||0)*100)}%</td>
       </tr>`).join('')}
+    </table></div>
+  </div>`;
+}
+
+// ===================== שעון נוכחות =====================
+const ATTEND_SHEET = 'נוכחות_מערכת';
+function _today() { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _now()   { const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function hoursBetween(inT, outT) {
+  if (!inT || !outT) return 0;
+  const a = String(inT).split(':').map(Number), b = String(outT).split(':').map(Number);
+  let m = (b[0]*60+b[1]) - (a[0]*60+a[1]);
+  if (m < 0) m += 1440;
+  return Math.round(m/60*100)/100;
+}
+async function loadAttendance() {
+  if (DB._attLoading || DB._attLoaded) return;
+  DB._attLoading = true;
+  try {
+    const [att, st] = await Promise.all([gsGetTable(ATTEND_SHEET), DB._bizLoaded ? Promise.resolve(null) : gsGetTable(STAFF_SHEET)]);
+    if (Array.isArray(att)) DB.attendance = att;
+    if (Array.isArray(st)) { DB.staff = st; DB._bizLoaded = true; }
+    DB._attLoaded = true;
+    render();
+  } catch(e) { console.warn('attendance load failed', e); }
+  DB._attLoading = false;
+}
+function clockIn() {
+  const sel = document.getElementById('att-emp');
+  if (!sel || !sel.value) { toast('בחר עובדת'); return; }
+  const name = sel.value;
+  if ((DB.attendance||[]).some(a => a.employee===name && a.clockIn && !a.clockOut)) { toast(name + ' כבר רשומה ככניסה'); return; }
+  const rec = { id:'att'+new Date().getTime(), employee:name, date:_today(), clockIn:_now(), clockOut:'', hours:0 };
+  DB.attendance.push(rec);
+  gsSaveRow(ATTEND_SHEET, {...rec, date:"'"+rec.date, clockIn:"'"+rec.clockIn});
+  toast('🟢 כניסה: ' + name + ' ' + rec.clockIn);
+  render();
+}
+function clockOut(id) {
+  const a = DB.attendance.find(x => String(x.id)===String(id));
+  if (!a) return;
+  a.clockOut = _now();
+  a.hours = hoursBetween(a.clockIn, a.clockOut);
+  gsSaveRow(ATTEND_SHEET, {...a, date:"'"+a.date, clockIn:"'"+a.clockIn, clockOut:"'"+a.clockOut});
+  toast('🔴 יציאה: ' + a.employee + ' ' + a.clockOut + ' (' + a.hours + ' שעות)');
+  render();
+}
+function deleteAttendance(id) {
+  if (!confirm('למחוק רישום נוכחות?')) return;
+  DB.attendance = DB.attendance.filter(x => String(x.id)!==String(id));
+  gsDeleteRow(ATTEND_SHEET, id);
+  render();
+}
+function renderAttendance() {
+  if (!DB._attLoaded) return `<div class="card"><div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ טוען נוכחות...</div></div>`;
+  const att = DB.attendance || [];
+  const open = att.filter(a => a.clockIn && !a.clockOut);
+  const staff = DB.staff || [];
+  const month = _today().slice(0,7);
+  const byEmp = {};
+  att.forEach(a => { if (String(a.date).slice(0,7)===month && a.clockOut) byEmp[a.employee] = (byEmp[a.employee]||0) + (parseFloat(a.hours)||0); });
+  const recent = att.filter(a => a.clockOut).sort((x,y)=> String((y.date||'')+(y.clockOut||'')).localeCompare(String((x.date||'')+(x.clockOut||'')))).slice(0,60);
+  return `
+  <div class="card no-print">
+    <div class="card-header"><h2>🕐 שעון נוכחות</h2></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 4px">
+      <select id="att-emp" style="padding:10px;min-width:200px;border:1.5px solid var(--green-mid);border-radius:8px;font-size:15px">
+        <option value="">— בחר עובדת —</option>
+        ${staff.map(s=>`<option value="${escHtml(s.name)}">${escHtml(s.name)}</option>`).join('')}
+      </select>
+      <button class="btn btn-primary" style="background:#1f9d55" onclick="clockIn()">🟢 רישום כניסה</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h2>🟢 כעת בעבודה — ${open.length}</h2></div>
+    ${open.length===0 ? `<div style="padding:16px;color:var(--text-muted)">אף עובדת לא בכניסה כרגע</div>` :
+      `<div class="table-wrap"><table>
+        <tr><th>עובדת</th><th>שעת כניסה</th><th>תאריך</th><th>פעולה</th></tr>
+        ${open.map(a=>`<tr><td><strong>${escHtml(a.employee)}</strong></td><td style="font-weight:700">${escHtml(a.clockIn)}</td><td>${formatDate(a.date)}</td><td><button class="btn btn-red btn-sm" onclick="clockOut('${a.id}')">🔴 יציאה</button></td></tr>`).join('')}
+      </table></div>`}
+  </div>
+  <div class="card">
+    <div class="card-header"><h2>📊 סיכום שעות החודש</h2></div>
+    <div class="table-wrap"><table>
+      <tr><th>עובדת</th><th>סך שעות</th></tr>
+      ${Object.keys(byEmp).length===0 ? `<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--text-muted)">אין נתונים החודש</td></tr>` :
+        Object.entries(byEmp).sort((a,b)=>b[1]-a[1]).map(([n,h])=>`<tr><td>${escHtml(n)}</td><td style="font-weight:700;color:var(--green-dark)">${Math.round(h*100)/100} שעות</td></tr>`).join('')}
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h2>🗒 משמרות אחרונות</h2></div>
+    <div class="table-wrap"><table>
+      <tr><th>תאריך</th><th>עובדת</th><th>כניסה</th><th>יציאה</th><th>שעות</th><th></th></tr>
+      ${recent.length===0 ? `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">אין משמרות עדיין</td></tr>` :
+        recent.map(a=>`<tr><td>${formatDate(a.date)}</td><td>${escHtml(a.employee)}</td><td>${escHtml(a.clockIn)}</td><td>${escHtml(a.clockOut)}</td><td style="font-weight:700">${a.hours}</td><td><button class="btn btn-red btn-sm" onclick="deleteAttendance('${a.id}')">🗑</button></td></tr>`).join('')}
     </table></div>
   </div>`;
 }
