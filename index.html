@@ -2304,50 +2304,189 @@ function deleteAttendance(id) {
   gsDeleteRow(ATTEND_SHEET, id);
   render();
 }
+// --- professional salary/report helpers ---
+const DOW_HE = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+function _dow(dateStr) { const p=String(dateStr).split('-').map(Number); if(p.length<3) return 0; return new Date(p[0],p[1]-1,p[2]).getDay(); }
+function staffRate(name) { const s=(DB.staff||[]).find(x=>x.name===name); return s?(parseFloat(s.baseRate)||0):0; }
+function attMonth() { return window._attMonth || _today().slice(0,7); }
+function attMonthShift(delta) {
+  const p=attMonth().split('-').map(Number); let y=p[0], m=p[1]+delta;
+  while(m<1){m+=12;y--;} while(m>12){m-=12;y++;}
+  window._attMonth = y+'-'+String(m).padStart(2,'0'); render();
+}
+function fmtMonth(m) { const p=String(m).split('-'); const names=['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']; return (names[+p[1]]||'')+' '+p[0]; }
+// aggregate one employee's shifts in a month into salary buckets (reg/extra/friday + overtime rules)
+function monthlyReport(name, month) {
+  const shifts=(DB.attendance||[]).filter(a=>a.employee===name && a.clockOut && String(a.date).slice(0,7)===month)
+    .sort((x,y)=>String((x.date||'')+(x.clockIn||'')).localeCompare(String((y.date||'')+(y.clockIn||''))));
+  const byDate={};
+  shifts.forEach(a=>{ byDate[a.date]=(byDate[a.date]||0)+(parseFloat(a.hours)||0); });
+  let reg=0,extra=0,friReg=0,friExtra=0;
+  Object.entries(byDate).forEach(([d,h])=>{
+    const r=Math.min(8,h), e=Math.max(0,h-8);
+    if(_dow(d)===5){ friReg+=r; friExtra+=e; } else { reg+=r; extra+=e; }
+  });
+  const rate=staffRate(name);
+  const salary=rate*(reg + 1.25*extra + 1.5*friReg + 1.75*friExtra);
+  const rnd=x=>Math.round(x*100)/100;
+  return {name,month,shifts,days:Object.keys(byDate).length,reg:rnd(reg),extra:rnd(extra),friReg:rnd(friReg),friExtra:rnd(friExtra),total:rnd(reg+extra+friReg+friExtra),rate,salary:Math.round(salary)};
+}
+// ---- manual shift add/edit ----
+function addShift(name) {
+  const opts=(DB.staff||[]).map(s=>`<option value="${escHtml(s.name)}" ${s.name===name?'selected':''}>${escHtml(s.name)}</option>`).join('');
+  showModal(`
+    <div class="modal-header"><h2>➕ הוספת משמרת ידנית</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <form onsubmit="saveShift(event,'')">
+      <div class="form-grid">
+        <div class="field"><label>עובדת *</label><select name="employee" required><option value="">— בחר —</option>${opts}</select></div>
+        <div class="field"><label>תאריך *</label><input type="date" name="date" value="${_today()}" required></div>
+        <div class="field"><label>שעת כניסה *</label><input type="time" name="clockIn" required></div>
+        <div class="field"><label>שעת יציאה *</label><input type="time" name="clockOut" required></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="closeModal()">ביטול</button><button type="submit" class="btn btn-primary">💾 שמור</button></div>
+    </form>`);
+}
+function editShift(id) {
+  const a=(DB.attendance||[]).find(x=>String(x.id)===String(id)); if(!a) return;
+  const opts=(DB.staff||[]).map(s=>`<option value="${escHtml(s.name)}" ${s.name===a.employee?'selected':''}>${escHtml(s.name)}</option>`).join('');
+  showModal(`
+    <div class="modal-header"><h2>✏️ עריכת משמרת</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <form onsubmit="saveShift(event,'${id}')">
+      <div class="form-grid">
+        <div class="field"><label>עובדת *</label><select name="employee" required>${opts}</select></div>
+        <div class="field"><label>תאריך *</label><input type="date" name="date" value="${escHtml(a.date)}" required></div>
+        <div class="field"><label>שעת כניסה *</label><input type="time" name="clockIn" value="${escHtml(a.clockIn)}" required></div>
+        <div class="field"><label>שעת יציאה *</label><input type="time" name="clockOut" value="${escHtml(a.clockOut)}" required></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="closeModal()">ביטול</button><button type="submit" class="btn btn-primary">💾 שמור</button></div>
+    </form>`);
+}
+function saveShift(ev, id) {
+  ev.preventDefault();
+  const fd=new FormData(ev.target);
+  const rec={ employee:fd.get('employee'), date:fd.get('date'), clockIn:fd.get('clockIn'), clockOut:fd.get('clockOut') };
+  rec.hours=hoursBetween(rec.clockIn, rec.clockOut);
+  if(id){ const a=DB.attendance.find(x=>String(x.id)===String(id)); if(a){rec.id=id; Object.assign(a,rec);} toast('משמרת עודכנה ✅'); }
+  else { rec.id='att'+new Date().getTime(); DB.attendance.push(rec); toast('משמרת נוספה ✅'); }
+  gsSaveRow(ATTEND_SHEET, {...rec, date:"'"+rec.date, clockIn:"'"+rec.clockIn, clockOut:"'"+rec.clockOut});
+  closeModal(); render();
+}
 function renderAttendance() {
   if (!DB._attLoaded) return `<div class="card"><div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ טוען נוכחות...</div></div>`;
   const att = DB.attendance || [];
   const open = att.filter(a => a.clockIn && !a.clockOut);
   const staff = DB.staff || [];
-  const month = _today().slice(0,7);
-  const byEmp = {};
-  att.forEach(a => { if (String(a.date).slice(0,7)===month && a.clockOut) byEmp[a.employee] = (byEmp[a.employee]||0) + (parseFloat(a.hours)||0); });
-  const recent = att.filter(a => a.clockOut).sort((x,y)=> String((y.date||'')+(y.clockOut||'')).localeCompare(String((x.date||'')+(x.clockOut||'')))).slice(0,60);
+  const month = attMonth();
+  const reports = staff.map(s=>monthlyReport(s.name, month)).filter(r=>r.shifts.length>0 || r.total>0);
+  const totHours = reports.reduce((s,r)=>s+r.total,0);
+  const totSalary = reports.reduce((s,r)=>s+r.salary,0);
+  const monthShifts = att.filter(a=>a.clockOut && String(a.date).slice(0,7)===month)
+    .sort((x,y)=>String((y.date||'')+(y.clockIn||'')).localeCompare(String((x.date||'')+(x.clockIn||''))));
   return `
+  <div class="stat-grid no-print">
+    <div class="stat-card ${open.length?'gold':''}"><div class="label">🟢 בעבודה כעת</div><div class="value">${open.length}</div></div>
+    <div class="stat-card"><div class="label">⏱ שעות החודש</div><div class="value">${Math.round(totHours)}</div></div>
+    <div class="stat-card"><div class="label">📋 משמרות החודש</div><div class="value">${monthShifts.length}</div></div>
+    <div class="stat-card"><div class="label">💰 עלות שכר משוערת</div><div class="value">₪${totSalary.toLocaleString()}</div></div>
+  </div>
+
   <div class="card no-print">
-    <div class="card-header"><h2>🕐 שעון נוכחות</h2></div>
+    <div class="card-header"><h2>🕐 החתמת שעון</h2></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 4px">
-      <select id="att-emp" style="padding:10px;min-width:200px;border:1.5px solid var(--green-mid);border-radius:8px;font-size:15px">
+      <select id="att-emp" style="padding:11px;min-width:210px;border:1.5px solid var(--green-mid);border-radius:8px;font-size:15px">
         <option value="">— בחר עובדת —</option>
         ${staff.map(s=>`<option value="${escHtml(s.name)}">${escHtml(s.name)}</option>`).join('')}
       </select>
-      <button class="btn btn-primary" style="background:#1f9d55" onclick="clockIn()">🟢 רישום כניסה</button>
+      <button class="btn btn-primary" style="background:#1f9d55;font-size:15px" onclick="clockIn()">🟢 כניסה</button>
+      <button class="btn btn-outline" onclick="addShift()">➕ משמרת ידנית</button>
     </div>
   </div>
-  <div class="card">
+
+  <div class="card no-print">
     <div class="card-header"><h2>🟢 כעת בעבודה — ${open.length}</h2></div>
     ${open.length===0 ? `<div style="padding:16px;color:var(--text-muted)">אף עובדת לא בכניסה כרגע</div>` :
       `<div class="table-wrap"><table>
-        <tr><th>עובדת</th><th>שעת כניסה</th><th>תאריך</th><th>פעולה</th></tr>
-        ${open.map(a=>`<tr><td><strong>${escHtml(a.employee)}</strong></td><td style="font-weight:700">${escHtml(a.clockIn)}</td><td>${formatDate(a.date)}</td><td><button class="btn btn-red btn-sm" onclick="clockOut('${a.id}')">🔴 יציאה</button></td></tr>`).join('')}
+        <tr><th>עובדת</th><th>נכנסה ב־</th><th>זמן עד כה</th><th>תאריך</th><th>פעולה</th></tr>
+        ${open.map(a=>`<tr><td><strong>${escHtml(a.employee)}</strong></td><td style="font-weight:700">${escHtml(a.clockIn)}</td><td style="color:var(--green-dark)">${hoursBetween(a.clockIn,_now())} ש'</td><td>${formatDate(a.date)}</td><td><button class="btn btn-red btn-sm" onclick="clockOut('${a.id}')">🔴 יציאה</button></td></tr>`).join('')}
       </table></div>`}
   </div>
+
   <div class="card">
-    <div class="card-header"><h2>📊 סיכום שעות החודש</h2></div>
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h2>📊 שכר ושעות — ${fmtMonth(month)}</h2>
+      <div class="no-print" style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-outline btn-sm" onclick="attMonthShift(-1)">◀ חודש קודם</button>
+        <button class="btn btn-outline btn-sm" onclick="attMonthShift(1)">חודש הבא ▶</button>
+      </div>
+    </div>
     <div class="table-wrap"><table>
-      <tr><th>עובדת</th><th>סך שעות</th></tr>
-      ${Object.keys(byEmp).length===0 ? `<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--text-muted)">אין נתונים החודש</td></tr>` :
-        Object.entries(byEmp).sort((a,b)=>b[1]-a[1]).map(([n,h])=>`<tr><td>${escHtml(n)}</td><td style="font-weight:700;color:var(--green-dark)">${Math.round(h*100)/100} שעות</td></tr>`).join('')}
+      <tr><th>עובדת</th><th>ימים</th><th>רגילות</th><th>נוספות</th><th>שישי</th><th>סה"כ שעות</th><th>₪/שעה</th><th>שכר משוער</th><th class="no-print"></th></tr>
+      ${reports.length===0 ? `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted)">אין נתוני נוכחות בחודש זה</td></tr>` :
+        reports.sort((a,b)=>b.salary-a.salary).map(r=>`<tr>
+          <td><strong>${escHtml(r.name)}</strong></td>
+          <td>${r.days}</td>
+          <td>${r.reg}</td>
+          <td>${r.extra?`<span style="color:#c87f0a">${r.extra}</span>`:'0'}</td>
+          <td>${(r.friReg+r.friExtra)?`<span style="color:#1f6fb2">${Math.round((r.friReg+r.friExtra)*100)/100}</span>`:'0'}</td>
+          <td style="font-weight:700">${r.total}</td>
+          <td>₪${r.rate}</td>
+          <td style="font-weight:800;color:var(--green-dark)">₪${r.salary.toLocaleString()}</td>
+          <td class="no-print"><button class="btn btn-gold btn-sm" onclick="printAttendanceReport('${encodeURIComponent(r.name)}','${month}')">📄 דוח</button></td>
+        </tr>`).join('')}
+      ${reports.length>1?`<tr style="background:#f4f8f3;font-weight:800"><td>סה"כ</td><td></td><td></td><td></td><td></td><td>${Math.round(totHours*100)/100}</td><td></td><td style="color:var(--green-dark)">₪${totSalary.toLocaleString()}</td><td class="no-print"></td></tr>`:''}
     </table></div>
+    <div style="padding:8px 12px;font-size:12px;color:var(--text-muted)" class="no-print">חישוב: עד 8 שעות ביום = רגיל · מעבר ל-8 = ×1.25 · שישי = ×1.5 (ומעבר ל-8 ×1.75). מבוסס על השכר לשעה שמוגדר במסך "צוות ושכר".</div>
   </div>
+
   <div class="card">
-    <div class="card-header"><h2>🗒 משמרות אחרונות</h2></div>
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h2>🗒 משמרות — ${fmtMonth(month)} (${monthShifts.length})</h2>
+      <button class="btn btn-outline btn-sm no-print" onclick="addShift()">➕ משמרת</button>
+    </div>
     <div class="table-wrap"><table>
-      <tr><th>תאריך</th><th>עובדת</th><th>כניסה</th><th>יציאה</th><th>שעות</th><th></th></tr>
-      ${recent.length===0 ? `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">אין משמרות עדיין</td></tr>` :
-        recent.map(a=>`<tr><td>${formatDate(a.date)}</td><td>${escHtml(a.employee)}</td><td>${escHtml(a.clockIn)}</td><td>${escHtml(a.clockOut)}</td><td style="font-weight:700">${a.hours}</td><td><button class="btn btn-red btn-sm" onclick="deleteAttendance('${a.id}')">🗑</button></td></tr>`).join('')}
+      <tr><th>תאריך</th><th>יום</th><th>עובדת</th><th>כניסה</th><th>יציאה</th><th>שעות</th><th class="no-print"></th></tr>
+      ${monthShifts.length===0 ? `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">אין משמרות בחודש זה</td></tr>` :
+        monthShifts.map(a=>`<tr><td>${formatDate(a.date)}</td><td>${DOW_HE[_dow(a.date)]||''}</td><td>${escHtml(a.employee)}</td><td>${escHtml(a.clockIn)}</td><td>${escHtml(a.clockOut)}</td><td style="font-weight:700">${a.hours}</td><td class="no-print" style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="editShift('${a.id}')">✏️</button> <button class="btn btn-red btn-sm" onclick="deleteAttendance('${a.id}')">🗑</button></td></tr>`).join('')}
     </table></div>
   </div>`;
+}
+function printAttendanceReport(encName, month) {
+  const name=decodeURIComponent(encName);
+  const r=monthlyReport(name, month);
+  const rows=r.shifts.map(a=>`<tr><td>${formatDate(a.date)}</td><td>${DOW_HE[_dow(a.date)]||''}</td><td>${a.clockIn}</td><td>${a.clockOut}</td><td style="text-align:center">${a.hours}</td></tr>`).join('');
+  const html=`<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8"><title>דוח נוכחות — ${name}</title>
+  <style>
+    *{font-family:Arial,Helvetica,sans-serif}
+    body{margin:24px;color:#1a1a1a}
+    h1{margin:0;font-size:22px;color:#2e6b3e}
+    .sub{color:#666;margin:2px 0 16px;font-size:14px}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{border:1px solid #bbb;padding:7px 9px;font-size:13px;text-align:right}
+    th{background:#eef5ec}
+    .totbox{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
+    .tb{border:1.5px solid #2e6b3e;border-radius:8px;padding:10px 16px;min-width:120px}
+    .tb .l{font-size:12px;color:#555}.tb .v{font-size:20px;font-weight:800;color:#2e6b3e}
+    .sal{background:#2e6b3e;color:#fff}.sal .l{color:#dfeede}.sal .v{color:#fff}
+    .foot{margin-top:30px;font-size:12px;color:#888;border-top:1px solid #ddd;padding-top:10px}
+    @media print{button{display:none}}
+  </style></head><body>
+    <h1>עיצוב בפרי — דוח נוכחות ושכר</h1>
+    <div class="sub">עובדת: <b>${name}</b> &nbsp;|&nbsp; חודש: <b>${fmtMonth(month)}</b> &nbsp;|&nbsp; ₪${r.rate} לשעה</div>
+    <table><tr><th>תאריך</th><th>יום</th><th>כניסה</th><th>יציאה</th><th>שעות</th></tr>${rows||'<tr><td colspan="5" style="text-align:center">אין משמרות</td></tr>'}</table>
+    <div class="totbox">
+      <div class="tb"><div class="l">ימי עבודה</div><div class="v">${r.days}</div></div>
+      <div class="tb"><div class="l">שעות רגילות</div><div class="v">${r.reg}</div></div>
+      <div class="tb"><div class="l">שעות נוספות</div><div class="v">${r.extra}</div></div>
+      <div class="tb"><div class="l">שעות שישי</div><div class="v">${Math.round((r.friReg+r.friExtra)*100)/100}</div></div>
+      <div class="tb"><div class="l">סה"כ שעות</div><div class="v">${r.total}</div></div>
+      <div class="tb sal"><div class="l">שכר משוער</div><div class="v">₪${r.salary.toLocaleString()}</div></div>
+    </div>
+    <div class="foot">חישוב שכר: עד 8 שעות ביום ×1 · מעבר ל-8 ×1.25 · שישי ×1.5 (מעבר ל-8 ×1.75). דוח זה הופק אוטומטית ממערכת עיצוב בפרי — אומדן בלבד.</div>
+    <button onclick="window.print()" style="margin-top:20px;padding:10px 22px;font-size:15px;background:#2e6b3e;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨 הדפס</button>
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(!w){ toast('חסום ע"י חוסם חלונות קופצים'); return; }
+  w.document.write(html); w.document.close();
 }
 
 // ===================== COLLECTION =====================
