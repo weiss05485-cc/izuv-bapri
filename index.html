@@ -304,6 +304,9 @@ tr:last-child td { border-bottom: none; }
       <a data-page="work"><span class="icon">🏭</span> מסך עבודה</a>
       <a data-page="expenses"><span class="icon">💸</span> הוצאות</a>
       <a data-page="pnl"><span class="icon">📈</span> רווח והפסד</a>
+      <a data-page="staff"><span class="icon">👷</span> צוות ושכר</a>
+      <a data-page="debts"><span class="icon">💳</span> חובות ספקים</a>
+      <a data-page="pricing"><span class="icon">🏷️</span> תמחור</a>
     </nav>
     <div class="version">גרסה 1.0 | עיצוב בפרי</div>
   </div>
@@ -336,6 +339,9 @@ const DB = {
   set customers(v) { this._customers = v; },
   expenses: [],
   sales: [],
+  staff: [],
+  debts: [],
+  pricing: [],
   employees: typeof EMPLOYEES_DB !== "undefined" ? EMPLOYEES_DB : [],
   products: [
     { id: 1, sku: "102", name: "סל פירות מק\"ט 102", content: "פירות עונתיים בעיצוב מיוחד", length: 0, width: 0, weight: 0, price: 300, price_usd: 74, catalog: "כללי 2026" },
@@ -620,6 +626,9 @@ function render() {
     work: 'מסך ניהול עבודה',
     expenses: 'ניהול הוצאות',
     pnl: 'רווח והפסד',
+    staff: 'צוות ושכר',
+    debts: 'חובות ספקים',
+    pricing: 'תמחור',
   };
   if (!canSee(currentPage)) currentPage = 'orders';  // אכיפת הרשאות
   applyRoleToNav();
@@ -638,6 +647,9 @@ function render() {
     case 'reports':     content.innerHTML = renderReports(); break;
     case 'expenses':    content.innerHTML = renderExpenses(); break;
     case 'pnl':         content.innerHTML = renderPnl(); break;
+    case 'staff':       content.innerHTML = renderStaff(); break;
+    case 'debts':       content.innerHTML = renderDebts(); break;
+    case 'pricing':     content.innerHTML = renderPricing(); break;
     default:            content.innerHTML = '<p>עמוד לא נמצא</p>';
   }
   bindEvents();
@@ -649,6 +661,7 @@ function render() {
   const _pr = document.getElementById('f-product');
   if (_pr) onProductChange(_pr);
   if ((currentPage === 'expenses' || currentPage === 'pnl') && !DB._expensesLoaded) loadExpenses();
+  if ((currentPage === 'staff' || currentPage === 'debts' || currentPage === 'pricing') && !DB._bizLoaded) loadBiz();
 }
 
 // ===================== HISTORICAL DATA (Google Sheets) =====================
@@ -2095,6 +2108,144 @@ function renderPnl() {
           <td style="color:#C0392B">${fmt(map[m].exp)}</td>
           <td style="font-weight:800;color:${p>=0?'var(--green-dark)':'#C0392B'}">${fmt(p)}</td>
         </tr>`; }).join('')}
+    </table></div>
+  </div>`;
+}
+
+// ===================== צוות/חובות/תמחור (מהאקסל) =====================
+const STAFF_SHEET = 'עובדות_מערכת', DEBTS_SHEET = 'חובות_מערכת', PRICING_SHEET = 'תמחור_מערכת';
+
+async function loadBiz() {
+  if (DB._bizLoading || DB._bizLoaded) return;
+  DB._bizLoading = true;
+  try {
+    const [st, dt, pr] = await Promise.all([gsGetTable(STAFF_SHEET), gsGetTable(DEBTS_SHEET), gsGetTable(PRICING_SHEET)]);
+    if (Array.isArray(st)) DB.staff = st;
+    if (Array.isArray(dt)) DB.debts = dt;
+    if (Array.isArray(pr)) DB.pricing = pr;
+    DB._bizLoaded = true;
+    render();
+  } catch(e) { console.warn('biz load failed', e); }
+  DB._bizLoading = false;
+}
+
+// ---- צוות ושכר ----
+function staffSalary(e) {
+  const r = parseFloat(e.baseRate)||0;
+  return Math.round(r*(parseFloat(e.hoursReg)||0) + r*1.25*(parseFloat(e.hoursExtra)||0) + r*1.5*(parseFloat(e.hoursFri)||0) + r*1.75*(parseFloat(e.hoursFriExtra)||0) + (parseFloat(e.bonus)||0) + (parseFloat(e.travel)||0));
+}
+function renderStaff() {
+  if (!DB._bizLoaded) return `<div class="card"><div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ טוען...</div></div>`;
+  const st = DB.staff||[];
+  const totalSalary = st.reduce((s,e)=>s+staffSalary(e),0);
+  return `
+  <div class="card">
+    <div class="card-header">
+      <h2>👷 צוות ושכר — ${st.length} עובדות · שכר משוער ₪${totalSalary.toLocaleString()}</h2>
+      <button class="btn btn-primary btn-sm" onclick="showAddStaff()">+ עובדת חדשה</button>
+    </div>
+    <div class="table-wrap"><table>
+      <tr><th>שם</th><th>שכר/שעה</th><th>שעות רגילות</th><th>נוספות</th><th>שישי</th><th>בונוס</th><th>נסיעות</th><th>שכר משוער</th><th>פעולות</th></tr>
+      ${st.length===0?`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-muted)">אין עובדות — לחץ "+ עובדת חדשה"</td></tr>`:
+        st.map(e=>`<tr>
+          <td><strong>${escHtml(e.name)}</strong></td>
+          <td>₪${e.baseRate}</td><td>${e.hoursReg||0}</td><td>${e.hoursExtra||0}</td><td>${e.hoursFri||0}</td>
+          <td>₪${e.bonus||0}</td><td>₪${e.travel||0}</td>
+          <td style="font-weight:700;color:var(--green-dark)">₪${staffSalary(e).toLocaleString()}</td>
+          <td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="showAddStaff('${e.id}')">✏️</button><button class="btn btn-red btn-sm" onclick="deleteStaff('${e.id}')">🗑</button></td>
+        </tr>`).join('')}
+    </table></div>
+  </div>`;
+}
+function showAddStaff(id) {
+  const e = id ? (DB.staff||[]).find(x=>String(x.id)===String(id)) : null;
+  const v = (f,d='')=> e ? (e[f]??d) : d;
+  showModal(`
+    <div class="modal-header"><h2>${e?'✏️ עריכת עובדת':'➕ עובדת חדשה'}</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <form onsubmit="saveStaff(event,'${id||''}')">
+      <div class="form-grid">
+        <div class="field"><label>שם *</label><input name="name" value="${escHtml(v('name'))}" required></div>
+        <div class="field"><label>שכר לשעה ₪</label><input type="number" step="0.01" name="baseRate" value="${v('baseRate',0)}"></div>
+        <div class="field"><label>שעות רגילות</label><input type="number" step="0.5" name="hoursReg" value="${v('hoursReg',0)}"></div>
+        <div class="field"><label>שעות נוספות</label><input type="number" step="0.5" name="hoursExtra" value="${v('hoursExtra',0)}"></div>
+        <div class="field"><label>שעות שישי</label><input type="number" step="0.5" name="hoursFri" value="${v('hoursFri',0)}"></div>
+        <div class="field"><label>בונוס ₪</label><input type="number" name="bonus" value="${v('bonus',0)}"></div>
+        <div class="field"><label>נסיעות ₪</label><input type="number" name="travel" value="${v('travel',0)}"></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="closeModal()">ביטול</button><button type="submit" class="btn btn-primary">💾 שמור</button></div>
+    </form>`);
+}
+function saveStaff(ev, id) {
+  ev.preventDefault();
+  const fd = new FormData(ev.target);
+  const data = { name:fd.get('name'), baseRate:parseFloat(fd.get('baseRate'))||0, hoursReg:parseFloat(fd.get('hoursReg'))||0, hoursExtra:parseFloat(fd.get('hoursExtra'))||0, hoursFri:parseFloat(fd.get('hoursFri'))||0, bonus:parseFloat(fd.get('bonus'))||0, travel:parseFloat(fd.get('travel'))||0 };
+  if (id) { const i=DB.staff.findIndex(x=>String(x.id)===String(id)); if(i>=0){data.id=id; Object.assign(DB.staff[i],data);} toast('עובדת עודכנה ✅'); }
+  else { data.id='st'+Date.now(); DB.staff.push(data); toast('עובדת נוספה ✅'); }
+  gsSaveRow(STAFF_SHEET, data); closeModal(); render();
+}
+function deleteStaff(id) {
+  if(!confirm('למחוק עובדת זו?')) return;
+  DB.staff = DB.staff.filter(x=>String(x.id)!==String(id));
+  gsDeleteRow(STAFF_SHEET, id); toast('נמחקה'); render();
+}
+
+// ---- חובות ספקים ----
+function renderDebts() {
+  if (!DB._bizLoaded) return `<div class="card"><div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ טוען...</div></div>`;
+  const d = DB.debts||[];
+  const totalDebt = d.reduce((s,x)=>s+(parseFloat(x.debt)||0),0);
+  const totalCredit = d.reduce((s,x)=>s+(parseFloat(x.credit)||0),0);
+  return `
+  <div class="stat-grid" style="margin-bottom:16px">
+    <div class="stat-card red"><div class="label">סה"כ חובות</div><div class="value">₪${Math.round(totalDebt).toLocaleString()}</div></div>
+    <div class="stat-card"><div class="label">סה"כ זכויות</div><div class="value">₪${Math.round(totalCredit).toLocaleString()}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h2>💳 חובות ספקים</h2><button class="btn btn-primary btn-sm" onclick="showAddDebt()">+ רשומה</button></div>
+    <div class="table-wrap"><table>
+      <tr><th>שם</th><th>חוב</th><th>זכות</th><th>הערה</th><th>פעולות</th></tr>
+      ${d.map(x=>`<tr>
+        <td><strong>${escHtml(x.name)}</strong></td>
+        <td style="color:#C0392B;font-weight:700">${x.debt?'₪'+Math.round(x.debt).toLocaleString():''}</td>
+        <td style="color:var(--green-dark)">${x.credit?'₪'+Math.round(x.credit).toLocaleString():''}</td>
+        <td style="font-size:12px">${escHtml(x.note)}</td>
+        <td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="showAddDebt('${x.id}')">✏️</button><button class="btn btn-red btn-sm" onclick="deleteDebt('${x.id}')">🗑</button></td>
+      </tr>`).join('')}
+    </table></div>
+  </div>`;
+}
+function showAddDebt(id) {
+  const e = id ? (DB.debts||[]).find(x=>String(x.id)===String(id)) : null;
+  const v=(f,d='')=>e?(e[f]??d):d;
+  showModal(`
+    <div class="modal-header"><h2>${e?'✏️ עריכה':'➕ רשומה חדשה'}</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <form onsubmit="saveDebt(event,'${id||''}')"><div class="form-grid">
+      <div class="field"><label>שם *</label><input name="name" value="${escHtml(v('name'))}" required></div>
+      <div class="field"><label>חוב ₪</label><input type="number" name="debt" value="${v('debt',0)}"></div>
+      <div class="field"><label>זכות ₪</label><input type="number" name="credit" value="${v('credit',0)}"></div>
+      <div class="field" style="grid-column:1/-1"><label>הערה</label><input name="note" value="${escHtml(v('note'))}"></div>
+    </div><div class="modal-footer"><button type="button" class="btn btn-outline" onclick="closeModal()">ביטול</button><button type="submit" class="btn btn-primary">💾 שמור</button></div></form>`);
+}
+function saveDebt(ev,id){ ev.preventDefault(); const fd=new FormData(ev.target); const data={name:fd.get('name'),debt:parseFloat(fd.get('debt'))||0,credit:parseFloat(fd.get('credit'))||0,note:fd.get('note')||''};
+  if(id){const i=DB.debts.findIndex(x=>String(x.id)===String(id)); if(i>=0){data.id=id;Object.assign(DB.debts[i],data);}} else {data.id='debt'+Date.now(); DB.debts.push(data);}
+  gsSaveRow(DEBTS_SHEET,data); toast('נשמר ✅'); closeModal(); render(); }
+function deleteDebt(id){ if(!confirm('למחוק?'))return; DB.debts=DB.debts.filter(x=>String(x.id)!==String(id)); gsDeleteRow(DEBTS_SHEET,id); render(); }
+
+// ---- תמחור ----
+function renderPricing() {
+  if (!DB._bizLoaded) return `<div class="card"><div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ טוען...</div></div>`;
+  const p = DB.pricing||[];
+  return `
+  <div class="card">
+    <div class="card-header"><h2>🏷️ תמחור — ${p.length} מוצרים</h2></div>
+    <div class="table-wrap"><table>
+      <tr><th>מוצר</th><th>עלות (ללא מע"מ)</th><th>מחיר לקוח (כולל)</th><th>רווח</th><th>אחוז רווח</th></tr>
+      ${p.map(x=>`<tr>
+        <td><strong>${escHtml(x.product)}</strong></td>
+        <td>₪${x.cost}</td><td>₪${x.priceVat}</td>
+        <td style="color:var(--green-dark);font-weight:700">₪${Math.round(x.profit)}</td>
+        <td>${Math.round((parseFloat(x.profitPct)||0)*100)}%</td>
+      </tr>`).join('')}
     </table></div>
   </div>`;
 }
