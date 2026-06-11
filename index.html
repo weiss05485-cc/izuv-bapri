@@ -2460,9 +2460,9 @@ async function fetchWithTimeout(url, timeout=10000) {
   }
 }
 
-async function gsGet(action) {
+async function gsGet(action, timeout) {
   try {
-    const r = await fetchWithTimeout(`${GS_URL}?action=${action}`, 12000);
+    const r = await fetchWithTimeout(`${GS_URL}?action=${action}`, timeout || 12000);
     if (r.ok) return await r.json();
   } catch(e) { console.warn('gsGet timeout/error:', e.message); }
   return null;
@@ -2509,7 +2509,7 @@ function gsSave(action, data) {
 async function gsPost(action, data) { return gsGet(action + '&data=' + encodeURIComponent(JSON.stringify(data))); }
 
 // ===== טבלאות גנריות (הוצאות וכל מודול עתידי) =====
-async function gsGetTable(sheet)   { return await gsGet('getTable&sheet=' + encodeURIComponent(sheet)); }
+async function gsGetTable(sheet)   { return await gsGet('getTable&sheet=' + encodeURIComponent(sheet), 60000); }
 function gsSaveRow(sheet, data)    { gsSave('saveRow', data, {sheet}); }
 function gsDeleteRow(sheet, id)    { gsGet('deleteTableRow&sheet=' + encodeURIComponent(sheet) + '&id=' + encodeURIComponent(id)).catch(()=>{}); }
 
