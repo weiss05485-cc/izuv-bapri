@@ -815,8 +815,11 @@ function deleteRow_GS(action, id) {
 // ===================== ORDERS =====================
 function renderOrders() {
   const statusFilter = window._orderFilter || 'all';
+  const dateFilter = window._orderDateFilter || '';
+  const dOf = o => String(o.deliveryDate||'').split('T')[0];
   let orders = [...DB.orders].sort((a,b) => b.id - a.id);
   if (statusFilter !== 'all') orders = orders.filter(o => o.status === statusFilter);
+  if (dateFilter) orders = orders.filter(o => dOf(o) === dateFilter);
 
   return `
   <div class="tabs">
@@ -827,11 +830,14 @@ function renderOrders() {
   </div>
   <div class="card">
     <div class="card-header">
-      <h2>📋 רשימת הזמנות</h2>
+      <h2>📋 רשימת הזמנות${dateFilter?` — תאריך אספקה ${formatDate(dateFilter)} (${orders.length})`:''}</h2>
       <button class="btn btn-primary btn-sm" data-page="new-order">+ הזמנה חדשה</button>
     </div>
-    <div class="search-bar">
-      <input type="text" id="order-search" placeholder="🔍 חיפוש לפי שם / מס' הזמנה..." oninput="filterOrders()">
+    <div class="search-bar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input type="text" id="order-search" placeholder="🔍 חיפוש לפי שם / מס' הזמנה..." oninput="filterOrders()" style="flex:1;min-width:200px">
+      <label style="font-weight:600;white-space:nowrap">📅 תאריך אספקה:</label>
+      <input type="date" id="order-date-filter" value="${dateFilter}" onchange="window._orderDateFilter=this.value;render()">
+      ${dateFilter?`<button class="btn btn-outline btn-sm" onclick="window._orderDateFilter='';render()">הצג הכל</button>`:''}
     </div>
     <div class="table-wrap" id="orders-table-wrap">
       ${renderOrdersTable(orders)}
@@ -841,7 +847,7 @@ function renderOrders() {
 
 function renderOrdersTable(orders) {
   return `<table>
-    <tr><th>מס' הזמנה</th><th>לקוח</th><th>מוצר</th><th>תאריך משלוח</th><th>עיר</th><th>סטטוס</th><th>תשלום</th><th>סכום</th><th>פעולות</th></tr>
+    <tr><th>מס' הזמנה</th><th>לקוח</th><th>מוצר</th><th>תאריך אספקה</th><th>עיר</th><th>סטטוס</th><th>תשלום</th><th>סכום</th><th>פעולות</th></tr>
     ${orders.map(o => {
       const [sl, sc] = statusLabel(o.status);
       const [pl, pc] = payLabel(o.paymentStatus);
@@ -877,8 +883,10 @@ function renderOrdersTable(orders) {
 function filterOrders() {
   const q = document.getElementById('order-search').value.toLowerCase();
   const statusFilter = window._orderFilter || 'all';
+  const dateFilter = window._orderDateFilter || '';
   let orders = [...DB.orders].sort((a,b) => b.id - a.id);
   if (statusFilter !== 'all') orders = orders.filter(o => o.status === statusFilter);
+  if (dateFilter) orders = orders.filter(o => String(o.deliveryDate||'').split('T')[0] === dateFilter);
   if (q) orders = orders.filter(o =>
     o.customerName.toLowerCase().includes(q) ||
     o.orderNum.toLowerCase().includes(q) ||
@@ -1056,9 +1064,8 @@ function renderOrderForm(editId) {
     <form id="order-form" onsubmit="submitOrder(event, ${editId||'null'})">
       <div class="form-grid">
         <div class="section-title">📅 פרטי משלוח</div>
-        <div class="field"><label>תאריך הזמנה</label><input type="date" name="orderDate" value="${v('orderDate', today)}"></div>
-        <div class="field"><label>תאריך הספקה</label><input type="date" name="supplyDate" value="${v('supplyDate')}"></div>
-        <div class="field"><label>תאריך למשלוח *</label><input type="date" name="deliveryDate" value="${v('deliveryDate')}" required></div>
+        <div class="field"><label>תאריך הזמנה (אוטומטי)</label><input type="date" name="orderDate" value="${v('orderDate', today)}"></div>
+        <div class="field"><label>תאריך אספקה *</label><input type="date" name="deliveryDate" value="${v('deliveryDate')}" required></div>
         <div class="field"><label>שעה</label><input type="time" name="deliveryTime" value="${v('deliveryTime','10:00')}"></div>
         <div class="field"><label>אזור</label><input type="text" name="area" value="${v('area')}" placeholder="אזור חלוקה"></div>
 
@@ -1373,21 +1380,22 @@ function printOrderAndDelivery(id) {
   const payText = (PM[o.paymentMethod] || o.paymentMethod || '—') + ' — ' + (o.paymentDone ? 'שולם' : 'לא שולם');
   const win = window.open('', '_blank');
   const css = `*{box-sizing:border-box}
-    body{font-family:Arial;direction:rtl;color:#000;margin:0;font-size:16px}
-    .page{padding:40px 46px;min-height:100vh;display:flex;flex-direction:column}
-    .order-top{flex:1}
-    .title{font-weight:800;font-size:23px;border-bottom:2px solid #000;padding-bottom:8px;margin:0 0 22px}
-    .line{margin:18px 0;display:flex;flex-wrap:wrap;gap:12px 32px;align-items:baseline}
-    .fld{display:inline-flex;gap:8px;align-items:baseline}
+    @page{size:A4;margin:9mm}
+    html,body{height:auto}
+    body{font-family:Arial;direction:rtl;color:#000;margin:0;font-size:14px}
+    .page{padding:6px 10px}
+    .title{font-weight:800;font-size:19px;border-bottom:2px solid #000;padding-bottom:6px;margin:0 0 12px}
+    .line{margin:10px 0;display:flex;flex-wrap:wrap;gap:8px 26px;align-items:baseline}
+    .fld{display:inline-flex;gap:7px;align-items:baseline}
     .lbl{font-weight:700;white-space:nowrap}
-    .v{border-bottom:1px solid #000;min-width:110px;padding:3px 8px;display:inline-block}
-    .vlong{flex:1;min-width:260px;border-bottom:1px solid #000;padding:3px 8px}
-    .section{font-weight:700;margin:24px 0 8px;color:#3E5C1A;font-size:18px}
-    .hr{border:0;border-top:2px dashed #888;margin:34px 0 22px}
-    .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}
-    .brand{font-weight:800;font-size:22px;color:#3E5C1A}
-    .contact{font-size:12px;text-align:left;line-height:1.6;color:#333}
-    .flag{font-weight:700;color:#7a6410;font-size:15px}
+    .v{border-bottom:1px solid #000;min-width:95px;padding:2px 7px;display:inline-block}
+    .vlong{flex:1;min-width:230px;border-bottom:1px solid #000;padding:2px 7px}
+    .section{font-weight:700;margin:14px 0 4px;color:#3E5C1A;font-size:16px}
+    .hr{border:0;border-top:2px dashed #888;margin:18px 0 12px}
+    .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:10px}
+    .brand{font-weight:800;font-size:19px;color:#3E5C1A}
+    .contact{font-size:11px;text-align:left;line-height:1.5;color:#333}
+    .flag{font-weight:700;color:#7a6410;font-size:14px}
     @media print{.no-print{display:none}}`;
   const venueLine = (o.destType && o.destType !== 'home' && o.destType !== 'pickup' && (o.venueName || o.room || o.department))
     ? `<div class="line"><span class="fld"><span class="lbl">${destLabel(o)}:</span><span class="v">${esc(o.venueName)}</span></span>${o.department ? `<span class="fld"><span class="lbl">מחלקה:</span><span class="v">${esc(o.department)}</span></span>` : ''}${o.room ? `<span class="fld"><span class="lbl">חדר:</span><span class="v">${esc(o.room)}</span></span>` : ''}</div>`
@@ -1399,11 +1407,8 @@ function printOrderAndDelivery(id) {
     <div class="title">טופס הזמנה מס׳ ${esc(o.orderNum)}</div>
     <div class="line">
       <span class="fld"><span class="lbl">תאריך הזמנה:</span><span class="v">${formatDate(o.orderDate || o.createdAt)}</span></span>
-      <span class="fld"><span class="lbl">תאריך הספקה:</span><span class="v">${formatDate(o.supplyDate)}</span></span>
-    </div>
-    <div class="line">
-      <span class="fld"><span class="lbl">תאריך למשלוח:</span><span class="v">${formatDate(o.deliveryDate)}</span></span>
-      <span class="fld"><span class="lbl">לשעה:</span><span class="v">${esc(formatTime(o.deliveryTime))}</span></span>
+      <span class="fld"><span class="lbl">תאריך אספקה:</span><span class="v">${formatDate(o.deliveryDate)}</span></span>
+      <span class="fld"><span class="lbl">שעה:</span><span class="v">${esc(formatTime(o.deliveryTime))}</span></span>
       <span class="fld"><span class="lbl">לעיר:</span><span class="v">${esc(o.city)}</span></span>
       <span class="fld"><span class="lbl">אזור:</span><span class="v">${esc(o.area)}</span></span>
     </div>
@@ -1484,9 +1489,9 @@ function updateProductPrice(sel) {
   if (dp) { dp.value = price; calcTotal(); }
 }
 
-// מוסיף שורת מגש (סוג + כמות) לרשימת המגשים
-function addTrayRow(type, qty) {
-  const list = document.getElementById('trays-list');
+// מוסיף שורת מגש (סוג + כמות) לרשימת המגשים (listId — ברירת מחדל רשימת ההזמנה)
+function addTrayRow(type, qty, listId) {
+  const list = document.getElementById(listId || 'trays-list');
   if (!list) return;
   const row = document.createElement('div');
   row.style = 'display:flex;gap:8px;margin-bottom:6px;align-items:center';
@@ -1615,7 +1620,6 @@ function submitOrder(e, editId) {
     traysJson,
     area: get('area'),
     orderDate: get('orderDate'),
-    supplyDate: get('supplyDate'),
     blessingCat: get('blessingCat'),
     blessingGraphic: get('blessingGraphic'),
     blessingUrl: blessingUrl(get('blessingCat'), get('blessingGraphic')),
@@ -1677,6 +1681,17 @@ function submitOrder(e, editId) {
     };
     DB.orders.push(newOrder);
     DB.nextId++;
+    // שמירת לקוח חדש אוטומטית (אם לא קיים כבר)
+    const _cn = (get('firstName') + ' ' + get('lastName')).trim();
+    const _cp = (get('phone') || get('mobile') || '').trim();
+    if (_cn) {
+      const _exists = DB.customers.some(c => (c.name||'').trim() === _cn || (_cp && (c.phone === _cp || c.mobile === _cp)));
+      if (!_exists) {
+        const newCust = { id: Date.now(), name: _cn, type: get('customerType') || 'private', phone: get('phone'), mobile: get('mobile'), city: get('city'), createdAt: new Date().toISOString().slice(0,10) };
+        try { DB.customers.push(newCust); } catch(e) {}
+        if (typeof saveCustomerToGS === 'function') saveCustomerToGS(newCust);
+      }
+    }
     if (paymentDone) toast('הזמנה נוצרה ✅ — חשבונית הופקה');
     else toast('הזמנה נוצרה ✅ — עברה למעקב גביה');
     // Ask to print
@@ -1850,13 +1865,12 @@ function renderProducts() {
     </div>
     <div class="table-wrap">
       <table>
-        <tr><th>מק"ט</th><th>שם</th><th>תכולה</th><th>סוג מגש</th><th>כמות</th><th>מחיר</th><th>פעולות</th></tr>
+        <tr><th>מק"ט</th><th>שם</th><th>גודל</th><th>מגשים</th><th>מחיר</th><th>פעולות</th></tr>
         ${DB.products.map(p => `<tr>
           <td>${escHtml(p.sku)}</td>
           <td><strong>${escHtml(p.name)}</strong></td>
-          <td>${escHtml(p.content)}</td>
-          <td>${escHtml(p.trayType)}</td>
-          <td>${escHtml(p.quantity)}</td>
+          <td>${escHtml(p.size)}</td>
+          <td style="font-size:12px">${escHtml(p.trayType)}</td>
           <td style="font-weight:700;color:var(--green-dark)">₪${p.price}</td>
           <td>
             <button class="btn btn-outline btn-sm" onclick="editProduct(${p.id})">✏️</button>
@@ -1880,10 +1894,14 @@ function showAddProduct(id) {
       <div class="form-grid">
         <div class="field"><label>מק"ט</label><input name="sku" value="${v('sku')}"></div>
         <div class="field"><label>שם המוצר *</label><input name="name" value="${v('name')}" required></div>
-        <div class="field"><label>תכולה</label><input name="content" value="${v('content')}"></div>
-        <div class="field"><label>סוג מגש</label><input name="trayType" value="${v('trayType')}"></div>
-        <div class="field"><label>כמות</label><input type="number" name="quantity" value="${v('quantity',1)}" min="1"></div>
+        <div class="field"><label>גודל</label><input name="size" value="${escHtml(v('size'))}" placeholder="לדוגמה: מטר / חצי מטר"></div>
         <div class="field"><label>מחיר ₪ *</label><input type="number" name="price" value="${v('price',0)}" required></div>
+        <div class="field" style="grid-column:1/-1">
+          <label>מגשים (אפשר להוסיף כמה — סוג + כמות)</label>
+          <div id="prod-trays-list"></div>
+          <input type="hidden" id="prod-traysJson" value="${escHtml(v('traysJson'))}">
+          <button type="button" class="btn btn-outline btn-sm" onclick="addTrayRow('',1,'prod-trays-list')" style="margin-top:6px">+ הוסף מגש</button>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeModal()">ביטול</button>
@@ -1891,6 +1909,12 @@ function showAddProduct(id) {
       </div>
     </form>
   `);
+  // אתחול רשימת המגשים של המוצר
+  let saved = [];
+  const sj = document.getElementById('prod-traysJson');
+  if (sj && sj.value) { try { saved = JSON.parse(sj.value); } catch(e) {} }
+  if (saved.length) saved.forEach(t => addTrayRow(t.t, t.q, 'prod-trays-list'));
+  else addTrayRow('', 1, 'prod-trays-list');
 }
 
 function editProduct(id) { showAddProduct(id); }
@@ -1898,7 +1922,16 @@ function editProduct(id) { showAddProduct(id); }
 function saveProduct(e, id) {
   e.preventDefault();
   const fd = new FormData(e.target);
-  const data = { sku: fd.get('sku'), name: fd.get('name'), content: fd.get('content'), trayType: fd.get('trayType'), quantity: parseInt(fd.get('quantity'))||1, price: parseFloat(fd.get('price'))||0 };
+  const trays = [...document.querySelectorAll('#prod-trays-list > div')].map(d => ({
+    t: (d.querySelector('.tray-type') ? d.querySelector('.tray-type').value : '').trim(),
+    q: parseInt(d.querySelector('.tray-qty') ? d.querySelector('.tray-qty').value : '1') || 1
+  })).filter(r => r.t);
+  const data = {
+    sku: fd.get('sku'), name: fd.get('name'), size: fd.get('size'),
+    trayType: trays.map(r => r.t + (r.q > 1 ? ' ×' + r.q : '')).join(', '),
+    traysJson: JSON.stringify(trays),
+    price: parseFloat(fd.get('price')) || 0
+  };
   let saved;
   if (id) {
     const idx = DB.products.findIndex(p => p.id === id);
