@@ -2150,10 +2150,11 @@ function renderStaff() {
       <button class="btn btn-primary btn-sm" onclick="showAddStaff()">+ עובדת חדשה</button>
     </div>
     <div class="table-wrap"><table>
-      <tr><th>שם</th><th>שכר/שעה</th><th>שעות רגילות</th><th>נוספות</th><th>שישי</th><th>בונוס</th><th>נסיעות</th><th>שכר משוער</th><th>פעולות</th></tr>
-      ${st.length===0?`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-muted)">אין עובדות — לחץ "+ עובדת חדשה"</td></tr>`:
+      <tr><th>שם</th><th>🔑 קוד</th><th>שכר/שעה</th><th>שעות רגילות</th><th>נוספות</th><th>שישי</th><th>בונוס</th><th>נסיעות</th><th>שכר משוער</th><th>פעולות</th></tr>
+      ${st.length===0?`<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted)">אין עובדות — לחץ "+ עובדת חדשה"</td></tr>`:
         st.map(e=>`<tr>
           <td><strong>${escHtml(e.name)}</strong></td>
+          <td>${e.pin?`<code style="background:#eef5ec;padding:2px 8px;border-radius:5px;font-weight:700">${escHtml(String(e.pin))}</code>`:`<span style="color:var(--red);font-size:12px">לא הוגדר</span>`}</td>
           <td>₪${e.baseRate}</td><td>${e.hoursReg||0}</td><td>${e.hoursExtra||0}</td><td>${e.hoursFri||0}</td>
           <td>₪${e.bonus||0}</td><td>₪${e.travel||0}</td>
           <td style="font-weight:700;color:var(--green-dark)">₪${staffSalary(e).toLocaleString()}</td>
@@ -2170,6 +2171,7 @@ function showAddStaff(id) {
     <form onsubmit="saveStaff(event,'${id||''}')">
       <div class="form-grid">
         <div class="field"><label>שם *</label><input name="name" value="${escHtml(v('name'))}" required></div>
+        <div class="field"><label>🔑 קוד אישי (להחתמת שעון)</label><input name="pin" inputmode="numeric" value="${escHtml(v('pin'))}" placeholder="למשל 1234"></div>
         <div class="field"><label>שכר לשעה ₪</label><input type="number" step="0.01" name="baseRate" value="${v('baseRate',0)}"></div>
         <div class="field"><label>שעות רגילות</label><input type="number" step="0.5" name="hoursReg" value="${v('hoursReg',0)}"></div>
         <div class="field"><label>שעות נוספות</label><input type="number" step="0.5" name="hoursExtra" value="${v('hoursExtra',0)}"></div>
@@ -2183,7 +2185,8 @@ function showAddStaff(id) {
 function saveStaff(ev, id) {
   ev.preventDefault();
   const fd = new FormData(ev.target);
-  const data = { name:fd.get('name'), baseRate:parseFloat(fd.get('baseRate'))||0, hoursReg:parseFloat(fd.get('hoursReg'))||0, hoursExtra:parseFloat(fd.get('hoursExtra'))||0, hoursFri:parseFloat(fd.get('hoursFri'))||0, bonus:parseFloat(fd.get('bonus'))||0, travel:parseFloat(fd.get('travel'))||0 };
+  const data = { name:fd.get('name'), pin:String(fd.get('pin')||'').trim(), baseRate:parseFloat(fd.get('baseRate'))||0, hoursReg:parseFloat(fd.get('hoursReg'))||0, hoursExtra:parseFloat(fd.get('hoursExtra'))||0, hoursFri:parseFloat(fd.get('hoursFri'))||0, bonus:parseFloat(fd.get('bonus'))||0, travel:parseFloat(fd.get('travel'))||0 };
+  if (data.pin && (DB.staff||[]).some(x=>String(x.pin||'').trim()===data.pin && String(x.id)!==String(id))) { toast('⚠️ הקוד כבר בשימוש אצל עובדת אחרת'); return; }
   if (id) { const i=DB.staff.findIndex(x=>String(x.id)===String(id)); if(i>=0){data.id=id; Object.assign(DB.staff[i],data);} toast('עובדת עודכנה ✅'); }
   else { data.id='st'+Date.now(); DB.staff.push(data); toast('עובדת נוספה ✅'); }
   gsSaveRow(STAFF_SHEET, data); closeModal(); render();
@@ -2304,6 +2307,62 @@ function deleteAttendance(id) {
   gsDeleteRow(ATTEND_SHEET, id);
   render();
 }
+// --- password punch-clock: employee types personal code → toggles in/out ---
+function _findStaffByPin(pin) { pin=String(pin).trim(); if(!pin) return null; return (DB.staff||[]).find(s=>String(s.pin||'').trim()===pin)||null; }
+function _doClockIn(name) {
+  const rec = { id:'att'+new Date().getTime(), employee:name, date:_today(), clockIn:_now(), clockOut:'', hours:0 };
+  DB.attendance.push(rec);
+  gsSaveRow(ATTEND_SHEET, {...rec, date:"'"+rec.date, clockIn:"'"+rec.clockIn});
+  toast('🟢 כניסה: ' + name + ' ' + rec.clockIn);
+  render();
+}
+function punchClock() {
+  const inp = document.getElementById('att-pin');
+  if (!inp) return;
+  const pin = inp.value.trim();
+  if (!pin) { toast('הקלידי קוד אישי'); return; }
+  const s = _findStaffByPin(pin);
+  inp.value = '';
+  if (!s) { toast('❌ קוד שגוי'); return; }
+  const openRec = (DB.attendance||[]).find(a => a.employee===s.name && a.clockIn && !a.clockOut);
+  if (openRec) clockOut(openRec.id);
+  else _doClockIn(s.name);
+}
+// --- export the month's attendance + salary report to an Excel-readable CSV ---
+function exportAttendanceExcel(month) {
+  const staff = DB.staff || [];
+  const reports = staff.map(s=>monthlyReport(s.name, month)).filter(r=>r.shifts.length>0 || r.total>0);
+  const q = v => '"' + String(v==null?'':v).replace(/"/g,'""') + '"';
+  const lines = [];
+  lines.push(q('דוח נוכחות ושכר — עיצוב בפרי') + ',' + q(fmtMonth(month)));
+  lines.push('');
+  // summary block
+  lines.push(['עובדת','ימים','שעות רגילות','שעות נוספות','שעות שישי','סה"כ שעות','₪ לשעה','שכר משוער ₪'].map(q).join(','));
+  let tH=0, tS=0;
+  reports.sort((a,b)=>b.salary-a.salary).forEach(r=>{
+    tH+=r.total; tS+=r.salary;
+    lines.push([r.name, r.days, r.reg, r.extra, Math.round((r.friReg+r.friExtra)*100)/100, r.total, r.rate, r.salary].map(q).join(','));
+  });
+  lines.push(['סה"כ','','','','',Math.round(tH*100)/100,'',tS].map(q).join(','));
+  lines.push(''); lines.push('');
+  // detailed shifts block
+  lines.push(['פירוט משמרות'].map(q).join(','));
+  lines.push(['תאריך','יום','עובדת','כניסה','יציאה','שעות'].map(q).join(','));
+  const shifts = (DB.attendance||[]).filter(a=>a.clockOut && String(a.date).slice(0,7)===month)
+    .sort((x,y)=>String((x.date||'')+(x.clockIn||'')).localeCompare(String((y.date||'')+(y.clockIn||''))));
+  shifts.forEach(a=>{
+    lines.push([formatDate(a.date), DOW_HE[_dow(a.date)]||'', a.employee, a.clockIn, a.clockOut, a.hours].map(q).join(','));
+  });
+  const csv = '﻿' + lines.join('\r\n'); // BOM so Hebrew opens correctly in Excel
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'דוח-נוכחות-' + month + '.csv';
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  toast('📥 הדוח יוצא לאקסל');
+}
 // --- professional salary/report helpers ---
 const DOW_HE = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
 function _dow(dateStr) { const p=String(dateStr).split('-').map(Number); if(p.length<3) return 0; return new Date(p[0],p[1]-1,p[2]).getDay(); }
@@ -2376,6 +2435,7 @@ function renderAttendance() {
   const att = DB.attendance || [];
   const open = att.filter(a => a.clockIn && !a.clockOut);
   const staff = DB.staff || [];
+  const noPinCount = staff.filter(s=>!String(s.pin||'').trim()).length;
   const month = attMonth();
   const reports = staff.map(s=>monthlyReport(s.name, month)).filter(r=>r.shifts.length>0 || r.total>0);
   const totHours = reports.reduce((s,r)=>s+r.total,0);
@@ -2393,13 +2453,11 @@ function renderAttendance() {
   <div class="card no-print">
     <div class="card-header"><h2>🕐 החתמת שעון</h2></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 4px">
-      <select id="att-emp" style="padding:11px;min-width:210px;border:1.5px solid var(--green-mid);border-radius:8px;font-size:15px">
-        <option value="">— בחר עובדת —</option>
-        ${staff.map(s=>`<option value="${escHtml(s.name)}">${escHtml(s.name)}</option>`).join('')}
-      </select>
-      <button class="btn btn-primary" style="background:#1f9d55;font-size:15px" onclick="clockIn()">🟢 כניסה</button>
+      <input id="att-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="🔑 קוד אישי" onkeydown="if(event.key==='Enter'){event.preventDefault();punchClock();}" style="padding:13px;min-width:220px;border:1.5px solid var(--green-mid);border-radius:8px;font-size:18px;text-align:center;letter-spacing:4px">
+      <button class="btn btn-primary" style="background:#1f9d55;font-size:16px;padding:13px 26px" onclick="punchClock()">⏱ החתם כניסה / יציאה</button>
       <button class="btn btn-outline" onclick="addShift()">➕ משמרת ידנית</button>
     </div>
+    <div style="padding:0 12px 10px;font-size:12.5px;color:var(--text-muted)">הקלידי את הקוד האישי שלך ולחצי "החתם" — כניסה בפעם הראשונה, יציאה בפעם הבאה.${noPinCount?` <span style="color:var(--red);font-weight:600">⚠️ ${noPinCount} עובדות ללא קוד — יש להגדיר ב"צוות ושכר".</span>`:''}</div>
   </div>
 
   <div class="card no-print">
@@ -2414,9 +2472,10 @@ function renderAttendance() {
   <div class="card">
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <h2>📊 שכר ושעות — ${fmtMonth(month)}</h2>
-      <div class="no-print" style="display:flex;gap:6px;align-items:center">
+      <div class="no-print" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="attMonthShift(-1)">◀ חודש קודם</button>
         <button class="btn btn-outline btn-sm" onclick="attMonthShift(1)">חודש הבא ▶</button>
+        <button class="btn btn-gold btn-sm" onclick="exportAttendanceExcel('${month}')">📥 ייצוא לאקסל</button>
       </div>
     </div>
     <div class="table-wrap"><table>
