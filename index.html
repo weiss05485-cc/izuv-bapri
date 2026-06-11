@@ -647,6 +647,7 @@ function render() {
   if (document.getElementById('f-bcat')) updateBlessingNames();
   const _pr = document.getElementById('f-product');
   if (_pr) onProductChange(_pr);
+  if ((currentPage === 'expenses' || currentPage === 'pnl') && !DB._expensesLoaded) loadExpenses();
 }
 
 // ===================== HISTORICAL DATA (Google Sheets) =====================
@@ -1958,15 +1959,34 @@ function deleteProduct(id) {
 const EXP_SHEET = 'הוצאות_מערכת';
 const EXP_CATEGORIES = ['ספקים','שכר עובדים','שכירות','רכב / דלק','חומרי גלם','שיווק','ציוד','אחר'];
 
+// טעינה עצלה של ההוצאות (רק כשפותחים הוצאות/רווח-והפסד; יכול להיות הרבה שורות)
+async function loadExpenses() {
+  if (DB._expensesLoading || DB._expensesLoaded) return;
+  DB._expensesLoading = true;
+  try {
+    const exp = await gsGetTable(EXP_SHEET);
+    if (Array.isArray(exp)) {
+      DB.expenses = exp.map(x => ({...x, id: parseInt(x.id)||x.id, amount: parseFloat(x.amount)||0}));
+      DB._expensesLoaded = true;
+      render();
+    }
+  } catch(e) { console.warn('expenses load failed', e); }
+  DB._expensesLoading = false;
+}
+
 function renderExpenses() {
-  const exps = [...(DB.expenses||[])].sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
-  const total = exps.reduce((s,e)=> s + (parseFloat(e.amount)||0), 0);
+  if (!DB._expensesLoaded) return `<div class="card"><div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ טוען הוצאות...</div></div>`;
+  const all = [...(DB.expenses||[])].sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
+  const total = all.reduce((s,e)=> s + (parseFloat(e.amount)||0), 0);
+  const CAP = 300;
+  const exps = all.slice(0, CAP);
   return `
   <div class="card">
     <div class="card-header">
-      <h2>💸 הוצאות — סה"כ ₪${total.toLocaleString()}</h2>
+      <h2>💸 הוצאות — ${all.length} שורות · סה"כ ₪${total.toLocaleString()}</h2>
       <button class="btn btn-primary btn-sm" onclick="showAddExpense()">+ הוצאה חדשה</button>
     </div>
+    ${all.length>CAP?`<div style="padding:6px 12px;color:var(--text-muted);font-size:13px">מציג ${CAP} אחרונות מתוך ${all.length} (לסיכומים המלאים — ראה דוח רווח/הפסד)</div>`:''}
     <div class="table-wrap">
       <table>
         <tr><th>תאריך</th><th>קטגוריה</th><th>ספק / תיאור</th><th>סכום</th><th>הערה</th><th>פעולות</th></tr>
@@ -2539,15 +2559,6 @@ async function loadFromGoogleSheets() {
       HISTORICAL.tasks = all.tasks;
       changed = true;
     }
-
-    // Expenses (טבלה גנרית נפרדת)
-    try {
-      const exp = await gsGetTable('הוצאות_מערכת');
-      if (Array.isArray(exp)) {
-        DB.expenses = exp.map(x => ({...x, id: parseInt(x.id)||x.id, amount: parseFloat(x.amount)||0}));
-        changed = true;
-      }
-    } catch(e) { console.warn('expenses load failed', e); }
 
     const msg = `✅ נטען: ${all.orders?.length||0} הזמנות, ${all.customers?.length||0} לקוחות, ${all.products?.length||0} מוצרים`;
     toast(msg);
