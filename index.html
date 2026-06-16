@@ -893,6 +893,7 @@ function renderOrdersTable(orders) {
           <button class="btn btn-outline btn-sm" onclick="showOrderDetails(${o.id})">👁 פרטים</button>
           <button class="btn btn-outline btn-sm" onclick="editOrder(${o.id})">✏️ ערוך</button>
           <button class="btn btn-gold btn-sm" onclick="showDeliveryLabel(${o.id})">📦 תעודה</button>
+          ${!o.paymentDone ? `<button class="btn btn-outline btn-sm" onclick="chargeCredit(${o.id})">💳 חיוב</button>` : ''}
           ${!o.paymentDone ? `<button class="btn btn-primary btn-sm" onclick="markPaid(${o.id})">✅ שולם</button>` : ''}
         </td>
       </tr>`;
@@ -2608,21 +2609,35 @@ function chargeCredit(id) {
   showModal(`
     <div class="modal-header"><h2>💳 חיוב אשראי — ${escHtml(o.orderNum)}</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div style="padding:16px 0;">
-      <p style="font-size:16px;margin-bottom:16px;">חיוב ₪<strong>${o.totalPrice}</strong> עבור <strong>${escHtml(o.customerName)}</strong></p>
-      <p style="color:var(--text-muted);font-size:13px;">🔗 חיבור לקארדקום — הסליקה תבוצע דרך מערכת קארדקום</p>
-      <div style="background:#F0F6E8;border-radius:8px;padding:14px;margin-top:14px;border:1px solid var(--border);">
-        <p style="font-weight:700;color:var(--green-dark);">שלח לינק לתשלום ב-SMS</p>
-        <div style="display:flex;gap:10px;margin-top:10px;">
-          <input type="tel" placeholder="מספר טלפון" value="${escHtml(o.mobile||o.phone)}" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;">
-          <button class="btn btn-primary" onclick="toast('לינק נשלח ✅');closeModal()">📱 שלח</button>
-        </div>
+      <p style="font-size:17px;margin-bottom:6px;">חיוב <strong>₪${(o.totalPrice||0).toLocaleString()}</strong> עבור <strong>${escHtml(o.customerName)}</strong></p>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">🔒 התשלום מתבצע בדף המאובטח של קארדקום — פרטי הכרטיס לא עוברים ולא נשמרים אצלנו.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" style="font-size:15px" onclick="cardcomCharge(${o.id})">💳 פתח דף תשלום</button>
+        <button class="btn btn-outline" onclick="cardcomCharge(${o.id},'copy')">🔗 העתק קישור לשליחה ללקוח</button>
       </div>
+      <p style="color:var(--text-muted);font-size:12px;margin-top:12px;">לאחר תשלום מוצלח ההזמנה תסומן "שולם" אוטומטית.</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-gold" onclick="markPaid(${o.id});closeModal()">✅ אשר תשלום ידנית</button>
       <button class="btn btn-outline" onclick="closeModal()">סגור</button>
     </div>
   `);
+}
+async function cardcomCharge(id, mode) {
+  const o = DB.orders.find(x => x.id === id);
+  if (!o) return;
+  toast('יוצר דף תשלום מאובטח...');
+  try {
+    const r = await gsGet('cardcomCreate&id=' + encodeURIComponent(id), 30000);
+    if (!r || r.error || !r.url) { toast('⚠️ ' + ((r && r.error) || 'לא התקבל קישור תשלום')); return; }
+    if (mode === 'copy') {
+      try { await navigator.clipboard.writeText(r.url); toast('🔗 הקישור הועתק — אפשר לשלוח ללקוח בוואטסאפ/SMS'); }
+      catch(e) { prompt('העתק את קישור התשלום:', r.url); }
+    } else {
+      window.open(r.url, '_blank');
+      toast('💳 דף התשלום נפתח');
+    }
+  } catch(e) { toast('שגיאה ביצירת דף התשלום'); }
 }
 
 function printReceipt(id) {
@@ -3036,9 +3051,25 @@ async function loadFromGoogleSheets() {
     const msg = `✅ נטען: ${all.orders?.length||0} הזמנות, ${all.customers?.length||0} לקוחות, ${all.products?.length||0} מוצרים`;
     toast(msg);
     if (changed) render();
+    handlePaymentRedirect();
   } catch(e) {
     toast('⚠️ שגיאת חיבור ל-Google Sheets');
     console.warn(e);
+  }
+}
+// After returning from the Cardcom payment page (?paid=ID / ?payfail=ID)
+function handlePaymentRedirect() {
+  const p = new URLSearchParams(location.search);
+  const paid = p.get('paid'), fail = p.get('payfail');
+  if (paid) {
+    const o = DB.orders.find(x => String(x.id) === String(paid));
+    if (o && !o.paymentDone) { o.paymentDone = true; o.paymentStatus = 'paid'; saveOrderToGS(o); }
+    toast('✅ התשלום התקבל! ההזמנה סומנה כשולמה');
+    history.replaceState(null, '', location.pathname);
+    render();
+  } else if (fail) {
+    toast('⚠️ התשלום לא הושלם');
+    history.replaceState(null, '', location.pathname);
   }
 }
 
