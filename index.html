@@ -895,6 +895,7 @@ function renderOrdersTable(orders) {
           <button class="btn btn-gold btn-sm" onclick="showDeliveryLabel(${o.id})">📦 תעודה</button>
           ${!o.paymentDone ? `<button class="btn btn-outline btn-sm" onclick="chargeCredit(${o.id})">💳 חיוב</button>` : ''}
           ${!o.paymentDone ? `<button class="btn btn-primary btn-sm" onclick="markPaid(${o.id})">✅ שולם</button>` : ''}
+          ${o.invoiceUrl ? `<button class="btn btn-gold btn-sm" onclick="viewInvoice(${o.id})">🧾 חשבונית</button>` : ''}
         </td>
       </tr>`;
     }).join('')}
@@ -923,7 +924,12 @@ function updateOrderStatus(id, status) {
 
 function markPaid(id) {
   const o = DB.orders.find(o => o.id === id);
-  if (o) { o.paymentDone = true; o.paymentStatus = 'paid'; toast('תשלום סומן ✅ — נשלחה חשבונית'); render(); }
+  if (o) { o.paymentDone = true; o.paymentStatus = 'paid'; saveOrderToGS(o); toast('תשלום סומן ✅'); render(); }
+}
+function viewInvoice(id) {
+  const o = DB.orders.find(o => o.id === id);
+  if (o && o.invoiceUrl) { window.open(o.invoiceUrl, '_blank'); }
+  else { toast('🧾 החשבונית נוצרה בכארדקום בעת התשלום וזמינה בממשק כארדקום'); }
 }
 
 // ===================== ORDER DETAILS MODAL =====================
@@ -1101,6 +1107,7 @@ function renderOrderForm(editId) {
         <div class="field"><label>שם משפחה *</label><input type="text" name="lastName" id="f-lastName" value="${v('lastName')}" required></div>
         <div class="field"><label>טלפון</label><input type="tel" name="phone" id="f-phone" value="${v('phone')}"></div>
         <div class="field"><label>נייד</label><input type="tel" name="mobile" id="f-mobile" value="${v('mobile')}"></div>
+        <div class="field"><label>אימייל (לשליחת חשבונית)</label><input type="email" name="email" id="f-email" value="${v('email')}"></div>
         <div class="field"><label>סוג לקוח</label>
           <select name="customerType">
             <option value="private" ${v('customerType','private')==='private'?'selected':''}>פרטי</option>
@@ -1661,7 +1668,7 @@ function submitOrder(e, editId) {
     if (idx >= 0) {
       Object.assign(DB.orders[idx], {
         deliveryDate: get('deliveryDate'), deliveryTime: get('deliveryTime'), city: get('city'),
-        firstName: get('firstName'), lastName: get('lastName'), phone: get('phone'), mobile: get('mobile'),
+        firstName: get('firstName'), lastName: get('lastName'), phone: get('phone'), mobile: get('mobile'), email: get('email'),
         customerType: get('customerType'), customerName: get('firstName')+' '+get('lastName'),
         productId, productName,
         notes: get('notes'), blessing: get('blessing'),
@@ -1684,7 +1691,7 @@ function submitOrder(e, editId) {
       customerId: null, customerName: get('firstName')+' '+get('lastName'),
       customerType: get('customerType'),
       deliveryDate: get('deliveryDate'), deliveryTime: get('deliveryTime'), city: get('city'),
-      firstName: get('firstName'), lastName: get('lastName'), phone: get('phone'), mobile: get('mobile'),
+      firstName: get('firstName'), lastName: get('lastName'), phone: get('phone'), mobile: get('mobile'), email: get('email'),
       productId, productName,
       notes: get('notes'), blessing: get('blessing'),
       kafe, designPrice: parseFloat(get('designPrice'))||0,
@@ -2596,7 +2603,7 @@ function renderCollection() {
           <td>${payMethodLabel(o.paymentMethod)}</td>
           <td>₪${o.totalPrice.toLocaleString()}</td>
           <td>${formatDate(o.createdAt)}</td>
-          <td><button class="btn btn-gold btn-sm" onclick="printReceipt(${o.id})">🧾 קבלה</button></td>
+          <td style="white-space:nowrap">${o.invoiceUrl ? `<button class="btn btn-primary btn-sm" onclick="viewInvoice(${o.id})">🧾 חשבונית</button> ` : ''}<button class="btn btn-gold btn-sm" onclick="printReceipt(${o.id})">קבלה</button></td>
         </tr>`).join('')}
       </table>
     </div>
