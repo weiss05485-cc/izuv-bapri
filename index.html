@@ -275,6 +275,27 @@ tr:last-child td { border-bottom: none; }
   opacity: 0; transition: opacity 0.3s; pointer-events: none;
 }
 #toast.show { opacity: 1; }
+
+/* ===== LOGIN SCREEN ===== */
+#login-screen { position: fixed; inset: 0; z-index: 10000; display: none;
+  align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #3E5C1A 0%, #6b8e23 60%, #B89A28 140%); }
+#login-screen.show { display: flex; }
+#login-box { background: #fff; width: 340px; max-width: 90vw; padding: 38px 30px 26px;
+  border-radius: 18px; box-shadow: 0 18px 50px rgba(0,0,0,0.35); text-align: center; }
+#login-box .login-logo { font-size: 46px; line-height: 1; }
+#login-box h1 { margin: 8px 0 2px; font-size: 26px; color: #3E5C1A; }
+#login-box .login-sub { color: #8a8a8a; font-size: 14px; margin-bottom: 22px; }
+#login-box input { width: 100%; box-sizing: border-box; padding: 13px 14px; margin-bottom: 12px;
+  border: 1.5px solid #d8e0cf; border-radius: 10px; font-size: 16px; text-align: right; outline: none;
+  transition: border-color .15s; }
+#login-box input:focus { border-color: #6b8e23; }
+#login-box button { width: 100%; padding: 13px; margin-top: 4px; border: none; border-radius: 10px;
+  background: #3E5C1A; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+  transition: background .15s; }
+#login-box button:hover { background: #4d7320; }
+#login-err { color: #c0392b; font-size: 13px; min-height: 18px; margin-bottom: 6px; font-weight: 600; }
+#login-box .login-foot { margin-top: 16px; color: #aaa; font-size: 12px; }
 </style>
 
 <script src="data.js"></script>
@@ -283,6 +304,20 @@ tr:last-child td { border-bottom: none; }
 
 <!-- TOAST -->
 <div id="toast"></div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <form id="login-box" onsubmit="doLogin(event)">
+    <div class="login-logo">🍎</div>
+    <h1>עיצוב בפרי</h1>
+    <div class="login-sub">מערכת ניהול עסקית</div>
+    <input id="login-user" placeholder="שם משתמש" autocomplete="username" autocapitalize="off">
+    <input id="login-pass" type="password" placeholder="סיסמה" autocomplete="current-password">
+    <div id="login-err"></div>
+    <button type="submit">כניסה למערכת</button>
+    <div class="login-foot">🔒 גישה מורשית בלבד</div>
+  </form>
+</div>
 
 <!-- APP ROOT -->
 <div id="app">
@@ -568,11 +603,10 @@ function applyRoleToNav() {
 function renderTopbar() {
   const ta = document.getElementById('topbar-actions');
   if (!ta) return;
+  const uname = localStorage.getItem('izuv_user') || '';
   let html = `<button class="btn btn-outline btn-sm" onclick="loadFromGoogleSheets()" title="טען מ-Google Sheets">🔄 סנכרן</button>`;
-  if (userRole === 'admin')
-    html += ` <button class="btn btn-outline btn-sm" onclick="exitAdmin()">👤 יציאה ממצב מנהל</button>`;
-  else
-    html += ` <button class="btn btn-gold btn-sm" onclick="adminLogin()">🔑 כניסת מנהל</button>`;
+  if (uname) html += ` <span style="font-size:13px;color:var(--text-muted);margin:0 4px">👤 ${escHtml(uname)}</span>`;
+  html += ` <button class="btn btn-red btn-sm" onclick="logout()">🚪 יציאה</button>`;
   ta.innerHTML = html;
 }
 
@@ -596,6 +630,36 @@ function exitAdmin() {
   toast('מצב מזכירה');
   applyRoleToNav();
   navigate('orders');
+}
+
+// ===================== LOGIN GATE =====================
+// משתמשי המערכת. אפשר להוסיף עוד (למשל מזכירה עם role:'secretary').
+const LOGIN_USERS = [
+  { user: 'אייזיק', pass: '12341234', role: 'admin' },
+];
+function isAuthed() { return localStorage.getItem('izuv_auth') === '1'; }
+function doLogin(ev) {
+  ev.preventDefault();
+  const u = (document.getElementById('login-user').value || '').trim();
+  const p = document.getElementById('login-pass').value || '';
+  const m = LOGIN_USERS.find(x => x.user === u && x.pass === p);
+  if (!m) { document.getElementById('login-err').textContent = 'שם משתמש או סיסמה שגויים'; return; }
+  localStorage.setItem('izuv_auth', '1');
+  localStorage.setItem('izuv_user', m.user);
+  localStorage.setItem('izuv_role', m.role);
+  userRole = m.role;
+  document.getElementById('login-screen').classList.remove('show');
+  bootApp();
+}
+function logout() {
+  localStorage.removeItem('izuv_auth');
+  location.reload();
+}
+function bootApp() {
+  applyRoleToNav();
+  loadFromGoogleSheets();
+  currentPage = (userRole === 'admin') ? 'dashboard' : 'orders';
+  navigate(currentPage);
 }
 
 let currentPage = (userRole === 'admin') ? 'dashboard' : 'orders';
@@ -3154,10 +3218,15 @@ function updateOrderStatus(id, status) {
 // ===================== INIT =====================
 document.getElementById('logo-img').src = LOGO_SRC;
 loadFromLocalStorage();
-applyRoleToNav();           // הסתרת עמודים לפי תפקיד
-// Auto-load from Google Sheets on startup
-loadFromGoogleSheets();
-navigate(currentPage);      // קובע עמוד התחלתי + מסמן בתפריט + מצייר טופבר
+if (isAuthed()) {
+  // כבר מחובר — טען את המערכת
+  userRole = localStorage.getItem('izuv_role') || 'admin';
+  document.getElementById('login-screen').classList.remove('show');
+  bootApp();
+} else {
+  // לא מחובר — הצג מסך כניסה, אל תטען נתונים
+  document.getElementById('login-screen').classList.add('show');
+}
 </script>
 </body>
 </html>
